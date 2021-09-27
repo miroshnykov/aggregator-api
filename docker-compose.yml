@@ -1,0 +1,31 @@
+version: '3'
+services:
+  co-recipe:
+    build: .
+    container_name: co-aggreagtor
+    volumes:
+      - .:/home/app
+    external_links:
+      - actionmedia
+    ports:
+      - 9002:9002
+    environment:
+      - BRANCH=dev
+      - VIRTUAL_HOST=co-aggreagtor-local.jatun.systems
+    networks:
+      - proxy
+      - database
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:latest
+
+networks:
+  database:
+    external: true
+  proxy:
+    external: true
+  default:
+    external:
+      name: actionmedia-network
