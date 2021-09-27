@@ -23,10 +23,16 @@
     HOST=localhost
     PORT=9002
     NODE_ENV = development
-    FOLDER_LOCAL = dir_current + unprocessed_json
-    #EX dir_current = /home/miroshnykov/Sites/co-aggragator/
+    FOLDER_LOCAL = unprocessed_json
+    #EX local dir_current = /home/miroshnykov/Sites/co-aggragator/unprocessed_json
     AWS_ACCESS_KEY_ID=
     AWS_SECRET_ACCESS_KEY=
     AWS_REGION=us-east-1
     
     S3_BUCKET_NAME = co-aggregator-staging
+
+    REDSHIFT_HOST = 
+    REDSHIFT_USER = 
+    REDSHIFT_PORT = 5439
+    REDSHIFT_PASSWORD = 
+    REDSHIFT_DATABASE = 
