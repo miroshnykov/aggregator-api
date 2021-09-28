@@ -1,9 +1,10 @@
 import Base64 from "js-base64";
-import {appendToLocalFile, createRecursiveFolder, deleteFile, generateFilePath} from "./utils";
+import {appendToLocalFile, createRecursiveFolder, deleteFile, generateFilePath, getLocalFiles} from "./utils";
 import path from "path";
 import {compressFile, copyGz} from "./zip";
 import consola from "consola";
-import {copyS3Files, copyZipToS3} from "./crons/copyZiptoS3";
+import {copyS3Files, copyZipFromS3Redshift, filesToS3 } from "./S3Handle";
+import {createDeflateRaw} from "zlib";
 
 const localPath: string = `${process.cwd()}/${process.env.FOLDER_LOCAL}` || ''
 consola.info(`FOLDER_LOCAL:${localPath}`)
@@ -35,12 +36,25 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
       await copyGz(filePath)
       await deleteFile(filePath)
       consola.info(` *** DONE FIRST STEP CREATE LOCAL ZIP *** FILE:${filePath}`)
-
-      setTimeout(copyZipToS3, 2000)
+      setTimeout(fileGzProcessing, 2000)
     } catch (e) {
       consola.error('error generate zip file:', e)
     }
-
   }
+}
 
+const fileGzProcessing = async () => {
+  try {
+    const localFolder: string = process.env.FOLDER_LOCAL + '_gz' || ''
+    const files = await getLocalFiles(localFolder)
+    consola.info('Zip files:', files)
+    if (files.length === 0) {
+      consola.info('no zip files at:', localFolder)
+      return
+    }
+    await filesToS3(files)
+    await copyZipFromS3Redshift(files)
+  } catch (e) {
+    consola.error('fileGzProcessingError:', e)
+  }
 }
