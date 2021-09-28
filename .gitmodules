@@ -1,0 +1,3 @@
+[submodule "cicd"]
+	path = cicd
+	url = git@gitlab.com:phoenix36/infrastructure/cicd-toolbox.git
