@@ -17,6 +17,7 @@ export const copyS3ToRedshift = async (file:string) => {
   consola.info('destPath:',destPath)
   // let file = '/unprocessed/co-offers/2021-09-24/13/20210924132442-292-523.json.gz'
   let queryCopy = `COPY ${dbRedshift} FROM 's3://${bucket}/${destPath}' CREDENTIALS 'aws_access_key_id=${awsKey};aws_secret_access_key=${awsSecretKey}' format as json 'auto' gzip MAXERROR 5 ACCEPTINVCHARS TRUNCATECOLUMNS TRIMBLANKS`;
+  consola.info('queryCopy:', queryCopy)
   try{
     await client.query(queryCopy)
     consola.info(`File ${destPath} added to redshift successfully`)
