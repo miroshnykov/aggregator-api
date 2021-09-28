@@ -93,14 +93,19 @@ export const copyS3Files = async (file: string, folder: Folder) => {
   consola.info('copyS3Files to folder:', folder)
   let destPath = 'unprocessed/co-offers/' + file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)
   consola.info('copyS3Files to file destPath:', destPath)
-  let destKey = '/co-offers/' + destPath.substr(destPath.indexOf('unprocessed_json_gz') + 20, destPath.length)
+  let destKey = '/co-offers/' + destPath.substr(destPath.indexOf('unprocessed_json_gz') + 23, destPath.length)
+
+  consola.info('copyS3Files destKey:', destKey)
   return new Promise<boolean>((resolve, reject) => {
-    let bucket = 'co-aggregator-staging'
+    // let bucket = 'co-aggregator-staging'
+    let bucket = process.env.S3_BUCKET_NAME || ''
+    consola.info('copyS3Files bucket :', bucket)
     const params = {
       Bucket: bucket,
       // CopySource: bucket + '/unprocessed/co-offers/2021-09-26/01/20210926014439-795-519.json.gz',
       CopySource: bucket + '/' + destPath,
-      Key: folder + '/co-offers/2021-09-26/01/20210926014439-795-519.json.gz',
+      // Key: folder + '/co-offers/2021-09-26/01/20210926014439-795-519.json.gz',
+      Key: folder + destKey,
     };
     s3.copyObject(params, (err, data) => {
       if (err) {
