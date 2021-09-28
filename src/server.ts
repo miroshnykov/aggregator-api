@@ -24,28 +24,28 @@ const aggregationObject: { [index: string]: any } = {}
 
 // http://localhost:9002/offer
 app.get('/sql', async (req: Request, res: Response) => {
-  let client = await pool.connect()
-
-
-  let awsKey = process.env.AWS_ACCESS_KEY_ID
-  let awsSecretKey = process.env.AWS_SECRET_ACCESS_KEY
-  let dbRedshift = 'advertiser_events.traffic'
-  let bucket = process.env.S3_BUCKET_NAME
-  let file = 'unprocessed/co-offers/2021-09-24/13/20210924132442-292-523.json.gz'
-  let queryCopy = `COPY ${dbRedshift} FROM 's3://${bucket}${file}' CREDENTIALS 'aws_access_key_id=${awsKey};aws_secret_access_key=${awsSecretKey}' format as json 'auto' gzip MAXERROR 5 ACCEPTINVCHARS TRUNCATECOLUMNS TRIMBLANKS`;
-// const res1 = await client.query('SELECT NOW()')
-  try{
-    await client.query(queryCopy)
-    console.log(`File ${file} added to redshift successfully`)
-    let obj = {
-      file: file
-    }
-    client.release()
-    res.status(200).json(obj)
-  } catch (e) {
-    consola.error(e)
-    res.json({err: e})
-  }
+//   let client = await pool.connect()
+//
+//
+//   let awsKey = process.env.AWS_ACCESS_KEY_ID
+//   let awsSecretKey = process.env.AWS_SECRET_ACCESS_KEY
+//   let dbRedshift = 'advertiser_events.traffic'
+//   let bucket = process.env.S3_BUCKET_NAME
+//   let file = 'unprocessed/co-offers/2021-09-24/13/20210924132442-292-523.json.gz'
+//   let queryCopy = `COPY ${dbRedshift} FROM 's3://${bucket}${file}' CREDENTIALS 'aws_access_key_id=${awsKey};aws_secret_access_key=${awsSecretKey}' format as json 'auto' gzip MAXERROR 5 ACCEPTINVCHARS TRUNCATECOLUMNS TRIMBLANKS`;
+// // const res1 = await client.query('SELECT NOW()')
+//   try{
+//     await client.query(queryCopy)
+//     console.log(`File ${file} added to redshift successfully`)
+//     let obj = {
+//       file: file
+//     }
+//     client.release()
+//     res.status(200).json(obj)
+//   } catch (e) {
+//     consola.error(e)
+//     res.json({err: e})
+//   }
 
 
   //
