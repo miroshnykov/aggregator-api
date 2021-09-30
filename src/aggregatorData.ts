@@ -52,14 +52,12 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
       // @ts-ignore
       let filePath = generateFilePath(localPath) || ''
       let fileFolder = path.dirname(filePath);
-      // consola.info('filePath:', filePath)
-      // consola.info('fileFolder:', fileFolder)
       await createRecursiveFolder(fileFolder)
       await appendToLocalFile(filePath, recordsReady)
       await compressFile(filePath)
       await copyGz(filePath)
       await deleteFile(filePath)
-      consola.info(` *** DONE FIRST STEP CREATE LOCAL ZIP *** FILE:${filePath}`)
+      consola.success(`DONE FIRST STEP create local gz file:${filePath}`)
       setTimeout(fileGzProcessing, 2000)
     } catch (e) {
       consola.error('error generate zip file:', e)
@@ -71,13 +69,14 @@ const fileGzProcessing = async () => {
   try {
     const localFolder: string = process.env.FOLDER_LOCAL + '_gz' || ''
     const files = await getLocalFiles(localFolder)
-    consola.info('Zip files:', files)
+    // consola.info(`gz files:${JSON.stringify(files)}`)
     if (files.length === 0) {
       consola.info('no zip files at:', localFolder)
       return
     }
     await filesToS3(files)
-    await copyZipFromS3Redshift(files)
+    setTimeout(copyZipFromS3Redshift, 2000, files)
+    // await copyZipFromS3Redshift(files)
   } catch (e) {
     consola.error('fileGzProcessingError:', e)
   }
