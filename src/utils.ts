@@ -63,3 +63,17 @@ export const getLocalFiles = (localFolder: string): Promise<string[]> => {
     });
   })
 };
+
+export const deleteFolder = (dirPath: string): Promise<string> => {
+  return new Promise<string>((resolve, reject) => {
+    fs.rm(dirPath, { recursive: true }, (err:any) => {
+      if (err) {
+        consola.error(`deleteFolderError:${dirPath}`,err)
+        reject(dirPath)
+      }
+      consola.info(`${dirPath} is deleted!`);
+    });
+
+    resolve(dirPath)
+  })
+};

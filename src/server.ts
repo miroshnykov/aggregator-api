@@ -14,6 +14,9 @@ const port: number = Number(process.env.PORT || '3001')
 
 import {aggregateDataProcessing} from "./aggregatorData";
 import {redshiftClient, pool} from "./redshift";
+import {deleteFolder} from "./utils";
+
+const localPath: string = `${process.cwd()}/${process.env.FOLDER_LOCAL}` || ''
 
 app.get('/health', (req: Request, res: Response) => {
   res.json('Ok')
@@ -81,6 +84,9 @@ app.post('/offer', async (req: Request, res: Response) => {
 })
 
 setInterval(aggregateDataProcessing, 9000, aggregationObject)
+
+setInterval(deleteFolder, 36000000, localPath) // 36000000 ms -> 10h
+setInterval(deleteFolder, 36000000, localPath + '_gz') // 36000000 ms ->  10h
 
 httpServer.listen(port, host, (): void => {
   consola.success(`Server is running on http://${host}:${port} NODE_ENV:${process.env.NODE_ENV}`)
