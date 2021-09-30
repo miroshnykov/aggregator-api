@@ -37,16 +37,19 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
   // consola.info(`count:${Object.keys(aggregationObject).length}`)
   if (Object.keys(aggregationObject).length >= 2) {
     try {
+      let lids: Array<string> = []
       let records = ""
       for (const [key, value] of Object.entries(aggregationObject)) {
         let buffer = JSON.parse(Base64.decode(key))
         buffer.click = value.count;
         let timeCurrent: number = new Date().getTime()
         affiliateIdsUnique.add(buffer.affiliate_id)
+        lids.push(buffer.lid)
         buffer.date_added = Math.floor(timeCurrent / 1000)
         records += JSON.stringify(buffer) + "\n";
       }
       let recordsReady = records.slice(0, -1)
+      consola.info(`Lids:${lids}`)
       // @ts-ignore
       Object.keys(aggregationObject).forEach(k => delete aggregationObject[k])
       // @ts-ignore
