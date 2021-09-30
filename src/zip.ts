@@ -19,7 +19,7 @@ export const compressFile = (fileName: string) => {
             resolve(write);
           })
         }).then(() => {
-          consola.info(`Compression fully finished. FileName:${fileName}`)
+          // consola.info(`Compression fully finished. FileName:${fileName}`)
           resolve(fileName)
         }).catch((err) => {
           console.error(`zip error fileName:${fileName}`, err)
