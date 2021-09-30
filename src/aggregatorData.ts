@@ -24,15 +24,13 @@ const sendToAffIdsToSqs = async () => {
     })
   }
 
-  const message = JSON.stringify(messageBody);
-
-  consola.info(`Added to SQS  Body:${JSON.stringify(message)}`)
-  let sqsData = await sendMessageToQueue(message)
+  consola.info(`Added to SQS  Body:${JSON.stringify(messageBody)}`)
+  let sqsData = await sendMessageToQueue(messageBody)
   consola.info(`sqsData:${JSON.stringify(sqsData)}`)
   affiliateIdsUnique.clear()
 }
 
-setInterval(sendToAffIdsToSqs, 28800000) // 28800000 ms -> 8h
+setInterval(sendToAffIdsToSqs, 300000) // 28800000 ms -> 8h  300000 -> 5 MIN FOR TEST
 
 export const aggregateDataProcessing = async (aggregationObject: object) => {
 
