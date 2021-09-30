@@ -3,11 +3,36 @@ import {appendToLocalFile, createRecursiveFolder, deleteFile, generateFilePath, 
 import path from "path";
 import {compressFile, copyGz} from "./zip";
 import consola from "consola";
-import {copyS3Files, copyZipFromS3Redshift, filesToS3 } from "./S3Handle";
+import {copyS3Files, copyZipFromS3Redshift, filesToS3} from "./S3Handle";
 import {createDeflateRaw} from "zlib";
+import {sendMessageToQueue} from "./sqs"
 
 const localPath: string = `${process.cwd()}/${process.env.FOLDER_LOCAL}` || ''
 consola.info(`FOLDER_LOCAL:${localPath}`)
+
+const affiliateIdsUnique = new Set();
+
+const sendToAffIdsToSqs = async () => {
+  let uniques = Array.from(affiliateIdsUnique)
+  if (uniques.length === 0) return
+
+  const messageBody = {
+    body: JSON.stringify({
+      type: 'traffic',
+      affiliatesId: uniques,
+      timestamp: Date.now()
+    })
+  }
+
+  const message = JSON.stringify(messageBody);
+
+  consola.info(`Added to SQS  Body:${JSON.stringify(message)}`)
+  let sqsData = await sendMessageToQueue(message)
+  consola.info(`sqsData:${JSON.stringify(sqsData)}`)
+  affiliateIdsUnique.clear()
+}
+
+setInterval(sendToAffIdsToSqs, 28800000) // 28800000 ms -> 8h
 
 export const aggregateDataProcessing = async (aggregationObject: object) => {
 
@@ -19,6 +44,7 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
         let buffer = JSON.parse(Base64.decode(key))
         buffer.click = value.count;
         let timeCurrent: number = new Date().getTime()
+        affiliateIdsUnique.add(buffer.affiliate_id)
         buffer.date_added = Math.floor(timeCurrent / 1000)
         records += JSON.stringify(buffer) + "\n";
       }
