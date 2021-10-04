@@ -31,6 +31,7 @@ app.post('/offer', async (req: Request, res: Response) => {
     let time: string = req.body.time
 
     if (!getCreateAggrObjectTime()){
+      consola.info('Setup setCreateAggrObjectTime')
       setCreateAggrObjectTime(Math.floor((new Date().getTime()) / 1000))
     }
 
