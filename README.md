@@ -11,7 +11,7 @@
 
 ## Docker setup
 	docker build -t co-aggragator .
-   	docker run -it -p 3001:3001 --rm --name co-aggragator-  co-aggragator
+	docker run -it -p 3001:3001 --rm --name co-aggragator-  co-aggragator
 
 ## run
     npm run dev
@@ -28,7 +28,7 @@
     AWS_ACCESS_KEY_ID=
     AWS_SECRET_ACCESS_KEY=
     AWS_REGION=us-east-1
-    
+
     S3_BUCKET_NAME = co-aggregator-staging
 
     REDSHIFT_HOST = 
