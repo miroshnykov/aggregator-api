@@ -3,6 +3,8 @@ import consola from "consola";
 import * as moment from "moment-timezone";
 import NodeDir from "node-dir";
 
+let createAggrObjectTime: any = null
+
 export const generateFilePath = (localPath: string) => {
   try {
     const time = new Date();
@@ -66,9 +68,9 @@ export const getLocalFiles = (localFolder: string): Promise<string[]> => {
 
 export const deleteFolder = (dirPath: string): Promise<string> => {
   return new Promise<string>((resolve, reject) => {
-    fs.rm(dirPath, { recursive: true }, (err:any) => {
+    fs.rm(dirPath, {recursive: true}, (err: any) => {
       if (err) {
-        consola.error(`deleteFolderError:${dirPath}`,err)
+        consola.error(`deleteFolderError:${dirPath}`, err)
         reject(dirPath)
       }
       consola.info(`${dirPath} is deleted!`);
@@ -77,3 +79,8 @@ export const deleteFolder = (dirPath: string): Promise<string> => {
     resolve(dirPath)
   })
 };
+export const setCreateAggrObjectTime = (createAggrObject: any) => {
+  createAggrObjectTime = createAggrObject
+}
+
+export const getCreateAggrObjectTime = () => (createAggrObjectTime)
