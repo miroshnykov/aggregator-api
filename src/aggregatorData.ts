@@ -1,5 +1,5 @@
 import Base64 from "js-base64";
-import {appendToLocalFile, createRecursiveFolder, deleteFile, generateFilePath, getLocalFiles} from "./utils";
+import {appendToLocalFile, createRecursiveFolder, deleteFile, generateFilePath, getLocalFiles, getCreateAggrObjectTime, setCreateAggrObjectTime} from "./utils";
 import path from "path";
 import {compressFile, copyGz} from "./zip";
 import consola from "consola";
@@ -34,8 +34,18 @@ setInterval(sendToAffIdsToSqs, 300000) // 28800000 ms -> 8h  300000 -> 5 MIN FOR
 
 export const aggregateDataProcessing = async (aggregationObject: object) => {
 
-  // consola.info(`count:${Object.keys(aggregationObject).length}`)
-  if (Object.keys(aggregationObject).length >= 2) {
+  let currentTime = Math.floor((new Date().getTime()) / 1000);
+  if (getCreateAggrObjectTime()){
+    consola.info('create Aggregate Object init , second left',currentTime - getCreateAggrObjectTime())
+  }
+
+  if (getCreateAggrObjectTime() && currentTime - getCreateAggrObjectTime() >= 60 && Object.keys(aggregationObject).length >= 1) { // 60 sec
+    consola.info(`pass 60 sec with records count:${Object.keys(aggregationObject).length}, process at event we have only one records`)
+  }
+
+  if (Object.keys(aggregationObject).length >= 20
+    || (Object.keys(aggregationObject).length >= 1 && getCreateAggrObjectTime() && currentTime - getCreateAggrObjectTime() >= 60) // 60 sec
+  ) {
     try {
       let lids: Array<string> = []
       let records = ""
@@ -49,9 +59,10 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
         records += JSON.stringify(buffer) + "\n";
       }
       let recordsReady = records.slice(0, -1)
-      consola.info(`Lids:${lids}`)
+      consola.info(`Lids count${lids.length}:${lids}`)
       // @ts-ignore
       Object.keys(aggregationObject).forEach(k => delete aggregationObject[k])
+      setCreateAggrObjectTime(null)
       // @ts-ignore
       let filePath = generateFilePath(localPath) || ''
       let fileFolder = path.dirname(filePath);

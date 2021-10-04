@@ -56,7 +56,7 @@ export const copyZipFromS3Redshift = async (files: string[]) => {
     }
     consola.success(`DONE THIRD STEP copy file to redshift:${JSON.stringify(files)}\n`)
   } catch (e) {
-    consola.error('copyZipFromS3RedshiftError:', copyZipFromS3Redshift)
+    consola.error('copyZipFromS3RedshiftError:', e)
   }
 
 }
@@ -155,6 +155,5 @@ export const copyS3ToRedshift = async (file:string) => {
     return true
   } catch (e) {
     consola.error('copyS3ToRedshiftError:',e)
-
   }
 }
