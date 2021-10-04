@@ -36,11 +36,11 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
 
   let currentTime = Math.floor((new Date().getTime()) / 1000);
   if (getCreateAggrObjectTime()){
-    consola.info('create Aggregate Object init , second left',currentTime - getCreateAggrObjectTime())
+    consola.info('Create Aggregate Object init , second left',currentTime - getCreateAggrObjectTime())
   }
 
   if (getCreateAggrObjectTime() && currentTime - getCreateAggrObjectTime() >= 60 && Object.keys(aggregationObject).length >= 1) { // 60 sec
-    consola.info(`pass 60 sec with records count:${Object.keys(aggregationObject).length}, process at event we have only one records`)
+    consola.info(`Pass 60 sec with records count:${Object.keys(aggregationObject).length}, process at event we have only one records`)
   }
 
   if (Object.keys(aggregationObject).length >= 20
