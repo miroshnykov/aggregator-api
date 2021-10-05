@@ -6,6 +6,8 @@ import SendData = ManagedUpload.SendData;
 import * as dotenv from "dotenv";
 
 import {pool} from "./redshift";
+import os from "os"
+const computerName = os.hostname()
 
 dotenv.config();
 
@@ -69,8 +71,7 @@ const uploadFileToS3Bucket = async (file: string) => {
   try {
     return new Promise<boolean>((resolve, reject) => {
       fs.readFile(file, (err, data) => {
-        let destPath = 'unprocessed/co-offers/' + file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)
-        // consola.info('destPath:', destPath)
+        let destPath = `unprocessed/${computerName}/co-offers/` + file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)
         if (err) throw err;
         let s3Key: string = destPath || ''
         let s3BucketName: string = process.env.S3_BUCKET_NAME || ''
@@ -103,8 +104,9 @@ const uploadFileToS3Bucket = async (file: string) => {
 
 export const copyS3Files = async (file: string, folder: Folder) => {
 
-  let destPath = 'unprocessed/co-offers/' + file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)
-  let destKey = '/co-offers/' + destPath.substr(destPath.indexOf('unprocessed_json_gz') + 23, destPath.length)
+  let path = file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)
+  let destPath = `unprocessed/${computerName}/co-offers/` + path
+  let destKey = `/${computerName}/co-offers/` + path
   return new Promise<boolean>((resolve, reject) => {
     let bucket = process.env.S3_BUCKET_NAME || ''
     const params = {
@@ -125,7 +127,7 @@ export const copyS3Files = async (file: string, folder: Folder) => {
 
 export const deleteS3Files = async (file: string) => {
 
-  let destPath = 'unprocessed/co-offers/' + file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)
+  let destPath = `unprocessed/${computerName}/co-offers/` + file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)
 
   return new Promise<boolean>((resolve, reject) => {
     let bucket = process.env.S3_BUCKET_NAME || ''
@@ -145,9 +147,9 @@ export const deleteS3Files = async (file: string) => {
   })
 }
 
-export const copyS3ToRedshift = async (file:string) => {
+export const copyS3ToRedshift = async (file: string) => {
   let client = await pool.connect()
-  let destPath = 'unprocessed/co-offers/' + file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)
+  let destPath = `unprocessed/${computerName}/co-offers/` + file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)
 
   let awsKey = process.env.AWS_ACCESS_KEY_ID
   let awsSecretKey = process.env.AWS_SECRET_ACCESS_KEY
@@ -155,13 +157,13 @@ export const copyS3ToRedshift = async (file:string) => {
   let bucket = process.env.S3_BUCKET_NAME
   let queryCopy = `COPY ${dbRedshift} FROM 's3://${bucket}/${destPath}' CREDENTIALS 'aws_access_key_id=${awsKey};aws_secret_access_key=${awsSecretKey}' format as json 'auto' gzip MAXERROR 5 ACCEPTINVCHARS TRUNCATECOLUMNS TRIMBLANKS`;
   // consola.info('queryCopy:', queryCopy)
-  try{
+  try {
     await client.query(queryCopy)
     consola.info(`File ${destPath} added to redshift successfully`)
     client.release()
     return true
   } catch (e) {
     influxdb(500, `copy_s3_to_redshift_error`)
-    consola.error('copyS3ToRedshiftError:',e)
+    consola.error('copyS3ToRedshiftError:', e)
   }
 }
