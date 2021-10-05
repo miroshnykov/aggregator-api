@@ -1,5 +1,13 @@
 import Base64 from "js-base64";
-import {appendToLocalFile, createRecursiveFolder, deleteFile, generateFilePath, getLocalFiles, getCreateAggrObjectTime, setCreateAggrObjectTime} from "./utils";
+import {
+  appendToLocalFile,
+  createRecursiveFolder,
+  deleteFile,
+  generateFilePath,
+  getLocalFiles,
+  getCreateAggrObjectTime,
+  setCreateAggrObjectTime
+} from "./utils";
 import path from "path";
 import {compressFile, copyGz} from "./zip";
 import consola from "consola";
@@ -35,8 +43,11 @@ setInterval(sendToAffIdsToSqs, 300000) // 28800000 ms -> 8h  300000 -> 5 MIN FOR
 export const aggregateDataProcessing = async (aggregationObject: object) => {
 
   let currentTime = Math.floor((new Date().getTime()) / 1000);
-  if (getCreateAggrObjectTime()){
-    consola.info('Create Aggregate Object init , second left',currentTime - getCreateAggrObjectTime())
+  if (getCreateAggrObjectTime()) {
+    consola.info(`Create Aggregate Object init, second left:${currentTime - getCreateAggrObjectTime()}`)
+  }
+  if (Object.keys(aggregationObject).length >= 1) {
+    consola.info(`Count clicks in pool:${Object.keys(aggregationObject).length}`)
   }
 
   if (getCreateAggrObjectTime() && currentTime - getCreateAggrObjectTime() >= 60 && Object.keys(aggregationObject).length >= 1) { // 60 sec
