@@ -38,7 +38,7 @@ const sendToAffIdsToSqs = async () => {
   affiliateIdsUnique.clear()
 }
 
-setInterval(sendToAffIdsToSqs, 300000) // 28800000 ms -> 8h  300000 -> 5 MIN FOR TEST
+setInterval(sendToAffIdsToSqs, 7200000) // 7200000ms -> 2h  28800000 ms -> 8h  300000 -> 5 MIN FOR TEST
 
 export const aggregateDataProcessing = async (aggregationObject: object) => {
 
