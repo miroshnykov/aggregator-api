@@ -2,7 +2,7 @@ import consola from "consola";
 
 import AWS from 'aws-sdk'
 import * as dotenv from "dotenv";
-
+import {influxdb} from "./metrics";
 dotenv.config();
 
 AWS.config.update({
@@ -30,6 +30,7 @@ export const sendMessageToQueue = async (body: any) => {
       return data
     })
     .catch(err => {
+      influxdb(500, `send_message_to_queue_affiliates_unique`)
       console.error('Error while send message to the sqs queue', err)
     })
 }

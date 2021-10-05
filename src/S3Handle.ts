@@ -10,6 +10,7 @@ import {pool} from "./redshift";
 dotenv.config();
 
 import {deleteFile, getLocalFiles} from "./utils";
+import {influxdb} from "./metrics";
 
 enum Folder {
   PROCESSED = 'processed',
@@ -37,6 +38,7 @@ export const filesToS3 = async (files: string[]) => {
     consola.success(`DONE SECOND STEP send gz to s3:${JSON.stringify(files)}`)
 
   } catch (e) {
+    influxdb(500, `files_to_s3_error`)
     consola.error('s3Handle:', e)
   }
 
@@ -48,8 +50,10 @@ export const copyZipFromS3Redshift = async (files: string[]) => {
     for (const file of files) {
       let copyS3ToRedshiftResponse = await copyS3ToRedshift(file)
       if (copyS3ToRedshiftResponse) {
+        influxdb(200, `offer_copy_file_redshift_success`)
         await copyS3Files(file, Folder.PROCESSED)
       } else {
+        influxdb(200, `offer_copy_file_redshift_failed`)
         await copyS3Files(file, Folder.FAILED)
       }
       await deleteS3Files(file)
@@ -90,6 +94,7 @@ const uploadFileToS3Bucket = async (file: string) => {
     })
 
   } catch (error) {
+    influxdb(500, `upload_file_to_s3_bucket_error`)
     console.error('s3 upload error:', error)
   } finally {
 
@@ -109,6 +114,7 @@ export const copyS3Files = async (file: string, folder: Folder) => {
     };
     s3.copyObject(params, (err, data) => {
       if (err) {
+        influxdb(500, `copy_s3_files_error`)
         console.log(err);
       } else {
         resolve(true)
@@ -129,6 +135,7 @@ export const deleteS3Files = async (file: string) => {
     };
     s3.deleteObject(params, (err, data) => {
       if (err) {
+        influxdb(500, `delete_s3_file_error`)
         consola.error(err);
       } else {
         // consola.success('deleted file destPath:',destPath)
@@ -154,6 +161,7 @@ export const copyS3ToRedshift = async (file:string) => {
     client.release()
     return true
   } catch (e) {
+    influxdb(500, `copy_s3_to_redshift_error`)
     consola.error('copyS3ToRedshiftError:',e)
   }
 }

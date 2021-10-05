@@ -4,6 +4,7 @@ import * as moment from "moment-timezone";
 import NodeDir from "node-dir";
 
 let createAggrObjectTime: any = null
+import {influxdb} from "./metrics";
 
 export const generateFilePath = (localPath: string) => {
   try {
@@ -22,6 +23,7 @@ export const createRecursiveFolder = (fileFolder: string) => {
   return new Promise<boolean>((resolve, reject) => {
     fs.mkdir(fileFolder, {recursive: true}, function (err: any) {
       if (err) {
+        influxdb(500, `create_recursive_folder_error`)
         reject(err);
       }
       resolve(true);
@@ -34,6 +36,7 @@ export const appendToLocalFile = (filePath: string, data: any) => {
     // @ts-ignore
     fs.appendFileSync(filePath, data, (err: any) => {
       if (err) {
+        influxdb(500, `append_to_local_file_error`)
         reject(err);
       }
     });
@@ -45,7 +48,8 @@ export const deleteFile = (filePath: string) => {
   return new Promise<string>((resolve, reject) => {
     fs.unlink(filePath, (err) => {
       if (err) {
-        consola.error(`deleteFile :`, err)
+        // consola.error(`deleteFile :`, err)
+        influxdb(500, `delete_file_error`)
         reject(filePath)
       }
     });
@@ -57,6 +61,7 @@ export const getLocalFiles = (localFolder: string): Promise<string[]> => {
   return new Promise<string[]>((resolve, reject) => {
     NodeDir.files(localFolder, (err: any, files: string[]) => {
       if (err) {
+        influxdb(500, `get_local_folder_error`)
         return reject(err);
       }
       files = files.filter((file) => (file.includes('.gz')))
@@ -70,7 +75,8 @@ export const deleteFolder = (dirPath: string): Promise<string> => {
   return new Promise<string>((resolve, reject) => {
     fs.rm(dirPath, {recursive: true}, (err: any) => {
       if (err) {
-        consola.error(`deleteFolderError:${dirPath}`, err)
+        // consola.error(`deleteFolderError:${dirPath}`, err)
+        influxdb(500, `delete_folder_error`)
         reject(dirPath)
       }
       consola.info(`${dirPath} is deleted!`);

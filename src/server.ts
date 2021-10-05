@@ -5,7 +5,7 @@ import consola from "consola";
 import express, {Application, Request, Response, NextFunction} from 'express'
 import Base64 from "js-base64"
 import path from "path";
-
+import {influxdb} from "./metrics";
 const app: Application = express();
 const httpServer = createServer(app);
 
@@ -29,6 +29,8 @@ app.post('/offer', async (req: Request, res: Response) => {
   try {
     let key: string = req.body.key
     let time: string = req.body.time
+
+    influxdb(200, `offer_get_click`)
 
     if (!getCreateAggrObjectTime()){
       consola.info('Setup setCreateAggrObjectTime')

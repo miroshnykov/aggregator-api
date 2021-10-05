@@ -14,6 +14,7 @@ import consola from "consola";
 import {copyS3Files, copyZipFromS3Redshift, filesToS3} from "./S3Handle";
 import {createDeflateRaw} from "zlib";
 import {sendMessageToQueue} from "./sqs"
+import {influxdb} from "./metrics";
 
 const localPath: string = `${process.cwd()}/${process.env.FOLDER_LOCAL}` || ''
 consola.info(`FOLDER_LOCAL:${localPath}`)
@@ -21,24 +22,31 @@ consola.info(`FOLDER_LOCAL:${localPath}`)
 const affiliateIdsUnique = new Set();
 
 const sendToAffIdsToSqs = async () => {
-  let uniques = Array.from(affiliateIdsUnique)
-  if (uniques.length === 0) return
+  try {
+    let uniques = Array.from(affiliateIdsUnique)
+    if (uniques.length === 0) return
 
-  const messageBody = {
-    body: JSON.stringify({
-      type: 'traffic',
-      affiliatesId: uniques,
-      timestamp: Date.now()
-    })
+    const messageBody = {
+      body: JSON.stringify({
+        type: 'traffic',
+        affiliatesId: uniques,
+        timestamp: Date.now()
+      })
+    }
+
+    consola.info(`Added to SQS  Body:${JSON.stringify(messageBody)}`)
+    let sqsData = await sendMessageToQueue(messageBody)
+    influxdb(200, `send_to_affIds_to_sqs_success`)
+    consola.info(`sqsData:${JSON.stringify(sqsData)}`)
+    affiliateIdsUnique.clear()
+  } catch (e) {
+    influxdb(500, `send_to_affIds_to_sqs_error`)
+    consola.error('')
   }
 
-  consola.info(`Added to SQS  Body:${JSON.stringify(messageBody)}`)
-  let sqsData = await sendMessageToQueue(messageBody)
-  consola.info(`sqsData:${JSON.stringify(sqsData)}`)
-  affiliateIdsUnique.clear()
 }
 
-setInterval(sendToAffIdsToSqs, 300000) // 28800000 ms -> 8h  300000 -> 5 MIN FOR TEST
+setInterval(sendToAffIdsToSqs, 7200000) // 7200000ms -> 2h  28800000 ms -> 8h  300000 -> 5 MIN FOR TEST
 
 export const aggregateDataProcessing = async (aggregationObject: object) => {
 
@@ -85,6 +93,7 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
       consola.success(`DONE FIRST STEP create local gz file:${filePath}`)
       setTimeout(fileGzProcessing, 2000)
     } catch (e) {
+      influxdb(500, `aggregate_data_processing_error`)
       consola.error('error generate zip file:', e)
     }
   }
@@ -103,6 +112,7 @@ const fileGzProcessing = async () => {
     setTimeout(copyZipFromS3Redshift, 2000, files)
     // await copyZipFromS3Redshift(files)
   } catch (e) {
+    influxdb(500, `file_gz_processing_error`)
     consola.error('fileGzProcessingError:', e)
   }
 }
