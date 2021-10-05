@@ -52,10 +52,8 @@ export const copyZipFromS3Redshift = async (files: string[]) => {
     for (const file of files) {
       let copyS3ToRedshiftResponse = await copyS3ToRedshift(file)
       if (copyS3ToRedshiftResponse) {
-        influxdb(200, `offer_copy_file_redshift_success`)
         await copyS3Files(file, Folder.PROCESSED)
       } else {
-        influxdb(200, `offer_copy_file_redshift_failed`)
         await copyS3Files(file, Folder.FAILED)
       }
       await deleteS3Files(file)
@@ -160,10 +158,11 @@ export const copyS3ToRedshift = async (file: string) => {
   try {
     await client.query(queryCopy)
     consola.info(`File ${destPath} added to redshift successfully`)
+    influxdb(200, `copy_file_s3_to_redshift_success`)
     client.release()
     return true
   } catch (e) {
-    influxdb(500, `copy_s3_to_redshift_error`)
+    influxdb(500, `copy_file_s3_to_redshift_error`)
     consola.error('copyS3ToRedshiftError:', e)
   }
 }
