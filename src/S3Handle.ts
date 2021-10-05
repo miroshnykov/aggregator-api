@@ -86,6 +86,7 @@ const uploadFileToS3Bucket = async (file: string) => {
             reject()
           }
           consola.info(`File uploaded successfully at S3 ${data.Location}`);
+          influxdb(200, `copy_gz_file_to_s3_success`)
           resolve(true)
         });
       });
@@ -93,7 +94,7 @@ const uploadFileToS3Bucket = async (file: string) => {
     })
 
   } catch (error) {
-    influxdb(500, `upload_file_to_s3_bucket_error`)
+    influxdb(500, `copy_gz_file_to_s3_error`)
     console.error('s3 upload error:', error)
   } finally {
 
