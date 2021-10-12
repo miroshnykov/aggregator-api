@@ -36,3 +36,6 @@
     REDSHIFT_PORT = 5439
     REDSHIFT_PASSWORD = 
     REDSHIFT_DATABASE = 
+
+# diagram
+![](diagram-co-traffic.png)

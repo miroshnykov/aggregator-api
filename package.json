@@ -11,15 +11,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/miroshnykov/co-aggragator.git"
+    "url": "git+ssh://git@gitlab.com/phoenix36/services/co-aggragator.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/miroshnykov/co-aggragator/issues"
+    "url": "https://gitlab.com/phoenix36/services/co-aggregator/issues"
   },
-  "homepage": "https://github.com/miroshnykov/co-aggragator#readme",
+  "homepage": "https://gitlab.com/phoenix36/services/co-aggregator#readme",
   "devDependencies": {
     "@types/express": "^4.17.13",
     "@types/lodash": "^4.14.175",
