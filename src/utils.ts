@@ -75,7 +75,7 @@ export const deleteFolder = (dirPath: string): Promise<string> => {
   return new Promise<string>((resolve, reject) => {
     fs.rm(dirPath, {recursive: true}, (err: any) => {
       if (err) {
-        // consola.error(`deleteFolderError:${dirPath}`, err)
+        consola.error(`deleteFolderError:${dirPath}`, err)
         influxdb(500, `delete_folder_error`)
         reject(dirPath)
       }
