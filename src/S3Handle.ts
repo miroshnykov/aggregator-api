@@ -37,7 +37,7 @@ export const filesToS3 = async (files: string[]) => {
         await deleteFile(file)
       }
     }
-    consola.success(`DONE SECOND STEP send gz to s3:${JSON.stringify(files)}`)
+    consola.success(`DONE SECOND STEP computerName:${computerName}, send gz to s3:${JSON.stringify(files)}`)
 
   } catch (e) {
     influxdb(500, `files_to_s3_error`)
@@ -58,7 +58,7 @@ export const copyZipFromS3Redshift = async (files: string[]) => {
       }
       await deleteS3Files(file)
     }
-    consola.success(`DONE THIRD STEP copy file to redshift:${JSON.stringify(files)}\n`)
+    consola.success(`DONE THIRD STEP computerName:${computerName}, copy file to redshift:${JSON.stringify(files)}\n`)
   } catch (e) {
     consola.error('copyZipFromS3RedshiftError:', e)
   }
@@ -105,13 +105,13 @@ export const copyS3Files = async (file: string, folder: Folder) => {
 
   let path = file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)
   let destPath = `unprocessed/${computerName}/co-offers/` + path
-  let destKey = `/${computerName}/co-offers/` + path
+  let destKey = `co-offers/` + path
   return new Promise<boolean>((resolve, reject) => {
     let bucket = process.env.S3_BUCKET_NAME || ''
     const params = {
       Bucket: bucket,
       CopySource: bucket + '/' + destPath,
-      Key: folder + destKey,
+      Key: folder + '/' + destKey,
     };
     s3.copyObject(params, (err, data) => {
       if (err) {
