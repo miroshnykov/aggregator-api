@@ -1,6 +1,6 @@
 FROM node:14.17-alpine3.14
 
-RUN apk add --no-cache redis curl
+RUN apk add --no-cache redis
 
 WORKDIR /home/app
 
