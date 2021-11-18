@@ -53,11 +53,11 @@ setInterval(sendToAffIdsToSqs, 7200000) // 7200000ms -> 2h  28800000 ms -> 8h  3
 export const aggregateDataProcessing = async (aggregationObject: object) => {
 
   let currentTime = Math.floor((new Date().getTime()) / 1000);
-  if (getCreateAggrObjectTime()) {
-    consola.info(`Create Aggregate Object init computerName:${computerName}, second left:${currentTime - getCreateAggrObjectTime()}`)
-  }
+  // if (getCreateAggrObjectTime()) {
+  //   consola.info(`Create Aggregate Object init computerName:${computerName}, second left:${currentTime - getCreateAggrObjectTime()}`)
+  // }
   if (Object.keys(aggregationObject).length >= 1) {
-    consola.info(`Count clicks in pool:${Object.keys(aggregationObject).length} computerName:${computerName}`)
+    consola.info(`Clicks in pool count:${Object.keys(aggregationObject).length} computerName:${computerName} second left:${currentTime - getCreateAggrObjectTime()}`)
   }
 
   if (getCreateAggrObjectTime() && currentTime - getCreateAggrObjectTime() >= 60 && Object.keys(aggregationObject).length >= 1) { // 60 sec
