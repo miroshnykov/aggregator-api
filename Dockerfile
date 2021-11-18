@@ -1,4 +1,4 @@
-FROM node:14.17-alpine3.14 AS build
+FROM node:14.17-alpine3.14 AS builder
 
 WORKDIR /app
 
@@ -14,17 +14,12 @@ RUN npm install \
 
 FROM node:14.17-alpine3.14
 
-RUN apk add --no-cache redis
-
 RUN rm -rf /usr/local/lib/node_modules/npm/ /usr/local/bin/npm
-
-RUN mkdir /tmp/recipe && chmod 755 /tmp
 
 WORKDIR /app
 
-COPY --from=build /app .
+COPY --from=builder /app .
 
 EXPOSE 80
 
-ENTRYPOINT redis-server --daemonize yes && \
-        node -r dotenv/config ./dist/server.js dotenv_config_path=/var/run/secrets/environment
+ENTRYPOINT ["node", "-r", "dotenv/config", "./dist/server.js", "dotenv_config_path=/run/secrets/environment"]
