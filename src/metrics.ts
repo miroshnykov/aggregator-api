@@ -45,7 +45,7 @@ export const influxdb = (statusCode: number, route: string) => {
     .queue()
 
   if (clientInfluxdb.writeQueueLength >= Interval.INTERVAL_REQUEST) {
-    consola.success(`Send to Grafana, interval:${Interval.INTERVAL_REQUEST} `)
+    //consola.success(`Send to Grafana, interval:${Interval.INTERVAL_REQUEST} `)
     clientInfluxdb.syncWrite()
       .catch((error: any) => {
         consola.error(error)
