@@ -6,6 +6,7 @@ import express, {Application, Request, Response, NextFunction} from 'express'
 import Base64 from "js-base64"
 import path from "path";
 import {influxdb} from "./metrics";
+
 const app: Application = express();
 const httpServer = createServer(app);
 
@@ -15,12 +16,23 @@ const port: number = Number(process.env.PORT || '3001')
 import {aggregateDataProcessing} from "./aggregatorData";
 import {redshiftClient, pool} from "./redshift";
 import {deleteFolder, getCreateAggrObjectTime, setCreateAggrObjectTime} from "./utils";
+import {IFolder, unprocessedS3Files} from "./S3Handle";
 
 const localPath: string = `${process.cwd()}/${process.env.FOLDER_LOCAL}` || ''
 
 app.get('/health', (req: Request, res: Response) => {
   res.json('Ok')
 })
+
+app.get('/reUploadToRedshift', (req: Request, res: Response) => {
+  setTimeout(unprocessedS3Files, 2000, IFolder.UNPROCESSED)
+  res.json({
+    success: true,
+    info: `added to sqs`
+  })
+})
+
+
 app.use(express.json())
 
 const aggregationObject: { [index: string]: any } = {}
@@ -32,7 +44,7 @@ app.post('/offer', async (req: Request, res: Response) => {
 
     influxdb(200, `offer_get_click`)
 
-    if (!getCreateAggrObjectTime()){
+    if (!getCreateAggrObjectTime()) {
       consola.info('Setup setCreateAggrObjectTime')
       setCreateAggrObjectTime(Math.floor((new Date().getTime()) / 1000))
     }

@@ -7,6 +7,7 @@ import * as dotenv from "dotenv";
 
 import {pool} from "./redshift";
 import os from "os"
+
 const computerName = os.hostname()
 
 dotenv.config();
@@ -14,9 +15,10 @@ dotenv.config();
 import {deleteFile, getLocalFiles} from "./utils";
 import {influxdb} from "./metrics";
 
-enum Folder {
+export enum IFolder {
   PROCESSED = 'processed',
-  FAILED = 'failed'
+  FAILED = 'failed',
+  UNPROCESSED = 'unprocessed'
 }
 
 AWS.config.update({
@@ -49,16 +51,21 @@ export const filesToS3 = async (files: string[]) => {
 export const copyZipFromS3Redshift = async (files: string[]) => {
 
   try {
+    let filesDestPath: string[] = []
     for (const file of files) {
-      let copyS3ToRedshiftResponse = await copyS3ToRedshift(file)
+      let destPath = `unprocessed/${computerName}/co-offers/` + file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)
+      filesDestPath.push(destPath!)
+      let copyS3ToRedshiftResponse = await copyS3ToRedshift(destPath)
       if (copyS3ToRedshiftResponse) {
-        await copyS3Files(file, Folder.PROCESSED)
+        await copyS3Files(file, IFolder.PROCESSED)
       } else {
-        await copyS3Files(file, Folder.FAILED)
+        consola.error(`Copy s3 Files to folder ${IFolder.FAILED} file:${file}`)
+        await copyS3Files(file, IFolder.FAILED)
       }
-      await deleteS3Files(file)
+
+      await deleteS3Files(destPath)
     }
-    consola.success(`DONE THIRD STEP computerName:${computerName}, copy file to redshift:${JSON.stringify(files)}\n`)
+    consola.success(`DONE THIRD STEP computerName:${computerName}, copy file to s3 folder-${IFolder.PROCESSED}, deleted files:${JSON.stringify(filesDestPath)}\n`)
   } catch (e) {
     consola.error('copyZipFromS3RedshiftError:', e)
   }
@@ -101,13 +108,16 @@ const uploadFileToS3Bucket = async (file: string) => {
   }
 }
 
-export const copyS3Files = async (file: string, folder: Folder) => {
+export const copyS3Files = async (file: string, folder: IFolder) => {
 
   let path = file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)
   let destPath = `unprocessed/${computerName}/co-offers/` + path
   let destKey = `co-offers/` + path
+
+  const bucket = process.env.S3_BUCKET_NAME || ''
+  consola.info(`CopyS3Files CopySource:${bucket}/${destPath}, Key:${folder}/${destKey}`)
   return new Promise<boolean>((resolve, reject) => {
-    let bucket = process.env.S3_BUCKET_NAME || ''
+
     const params = {
       Bucket: bucket,
       CopySource: bucket + '/' + destPath,
@@ -124,9 +134,33 @@ export const copyS3Files = async (file: string, folder: Folder) => {
   })
 }
 
-export const deleteS3Files = async (file: string) => {
+export const unprocessedS3Files = async (folder: IFolder) => {
+  try {
+    let bucket = process.env.S3_BUCKET_NAME || ''
+    const params = {
+      Bucket: bucket,
+      Prefix: `${folder}/`,
+    }
+    let filesPath: string[] = []
+    let s3Objects = await s3.listObjects(params).promise();
+    for (const content of s3Objects?.Contents!) {
+      filesPath.push(content.Key!)
+    }
 
-  let destPath = `unprocessed/${computerName}/co-offers/` + file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)
+    for (const filePath of filesPath) {
+      await copyS3ToRedshift(filePath)
+      await deleteS3Files(filePath)
+    }
+
+    consola.info('reSend to redshift files:', filesPath)
+
+  } catch (e) {
+    console.log(e)
+  }
+}
+
+
+export const deleteS3Files = async (destPath: string) => {
 
   return new Promise<boolean>((resolve, reject) => {
     let bucket = process.env.S3_BUCKET_NAME || ''
@@ -146,9 +180,8 @@ export const deleteS3Files = async (file: string) => {
   })
 }
 
-export const copyS3ToRedshift = async (file: string) => {
+export const copyS3ToRedshift = async (destPath: string) => {
   let client = await pool.connect()
-  let destPath = `unprocessed/${computerName}/co-offers/` + file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)
 
   let awsKey = process.env.AWS_ACCESS_KEY_ID
   let awsSecretKey = process.env.AWS_SECRET_ACCESS_KEY
