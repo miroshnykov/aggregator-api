@@ -24,11 +24,12 @@ app.get('/health', (req: Request, res: Response) => {
   res.json('Ok')
 })
 
+// https://aggregator.aezai.com/reUploadToRedshift
 app.get('/reUploadToRedshift', (req: Request, res: Response) => {
   setTimeout(unprocessedS3Files, 2000, IFolder.UNPROCESSED)
   res.json({
     success: true,
-    info: `added to sqs`
+    info: `added to queue running after 2 seconds`
   })
 })
 
