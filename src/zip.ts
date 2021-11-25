@@ -3,6 +3,7 @@ import zlib from "zlib";
 import path from "path";
 import {createRecursiveFolder} from "./utils";
 import consola from "consola";
+import {influxdb} from "./metrics";
 
 export const compressFile = (fileName: string) => {
   return new Promise((resolve) => {
@@ -23,6 +24,7 @@ export const compressFile = (fileName: string) => {
           resolve(fileName)
         }).catch((err) => {
           console.error(`zip error fileName:${fileName}`, err)
+          influxdb(500, `compress_zip_file_error`)
         })
       }
     })

@@ -93,7 +93,7 @@ const uploadFileToS3Bucket = async (file: string) => {
             reject()
           }
           consola.info(`File uploaded successfully at S3 ${data.Location}`);
-          influxdb(200, `copy_gz_file_to_s3_success`)
+          influxdb(200, `copy_gz_file_to_s3_success_${computerName}`)
           resolve(true)
         });
       });
@@ -101,7 +101,7 @@ const uploadFileToS3Bucket = async (file: string) => {
     })
 
   } catch (error) {
-    influxdb(500, `copy_gz_file_to_s3_error`)
+    influxdb(500, `copy_gz_file_to_s3_error_${computerName}`)
     console.error('s3 upload error:', error)
   } finally {
 
@@ -192,11 +192,11 @@ export const copyS3ToRedshift = async (destPath: string) => {
   try {
     await client.query(queryCopy)
     consola.info(`File ${destPath} added to redshift successfully`)
-    influxdb(200, `copy_file_s3_to_redshift_success`)
+    influxdb(200, `copy_file_s3_to_redshift_success_${computerName}`)
     client.release()
     return true
   } catch (e) {
-    influxdb(500, `copy_file_s3_to_redshift_error`)
+    influxdb(500, `copy_file_s3_to_redshift_error_${computerName}`)
     consola.error('copyS3ToRedshiftError:', e)
   }
 }
