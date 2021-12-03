@@ -11,11 +11,12 @@ import {
 import path from "path";
 import {compressFile, copyGz} from "./zip";
 import consola from "consola";
-import {copyS3Files, copyZipFromS3Redshift, filesToS3} from "./S3Handle";
+import {copyZipFromS3Redshift, filesToS3} from "./S3Handle";
 import {createDeflateRaw} from "zlib";
 import {sendMessageToQueue} from "./sqs"
 import {influxdb} from "./metrics";
 import os from "os"
+
 const computerName = os.hostname()
 
 const localPath: string = `${process.cwd()}/${process.env.FOLDER_LOCAL}` || ''
@@ -80,7 +81,8 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
         records += JSON.stringify(buffer) + "\n";
       }
       let recordsReady = records.slice(0, -1)
-      consola.info(`ComputerName:${computerName}. Lids count${lids.length}:${lids}`)
+      consola.info(`ComputerName:${computerName}. Lids count: { ${lids.length} }. Lids list:${lids}`)
+      // influxdb(200, `lids_pool_${computerName}_count_${lids.length}`)
       // @ts-ignore
       Object.keys(aggregationObject).forEach(k => delete aggregationObject[k])
       setCreateAggrObjectTime(null)
