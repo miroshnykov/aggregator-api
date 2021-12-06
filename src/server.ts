@@ -15,7 +15,7 @@ const port: number = Number(process.env.PORT || '3001')
 
 import {aggregateDataProcessing} from "./aggregatorData";
 import {redshiftClient, pool} from "./redshift";
-import {deleteFolder, getCreateAggrObjectTime, setCreateAggrObjectTime} from "./utils";
+import {deleteFolder, getHumanDateFormat, getInitDateTime, setInitDateTime} from "./utils";
 import {IFolder, unprocessedS3Files} from "./S3Handle";
 
 const localPath: string = `${process.cwd()}/${process.env.FOLDER_LOCAL}` || ''
@@ -45,9 +45,12 @@ app.post('/offer', async (req: Request, res: Response) => {
 
     influxdb(200, `offer_get_click`)
 
-    if (!getCreateAggrObjectTime()) {
-      consola.info('Setup setCreateAggrObjectTime')
-      setCreateAggrObjectTime(Math.floor((new Date().getTime()) / 1000))
+    if (!getInitDateTime()) {
+
+      const currentTime: number = Math.floor((new Date().getTime()) / 1000)
+      const currentDateHuman = new Date(currentTime * 1000);
+      consola.info(`Setup setInitDateTime:${getHumanDateFormat(currentDateHuman)}`)
+      setInitDateTime(currentTime)
     }
 
     if (key in aggregationObject) {
