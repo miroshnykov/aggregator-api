@@ -11,14 +11,14 @@ AWS.config.update({
   region: process.env.AWS_REGION
 });
 
-let sqs = new AWS.SQS()
+const sqs = new AWS.SQS()
 
 const queueUrl: string = process.env.AWS_SQS_QUEUE_URL || ''
 consola.info(`queueUrl:${queueUrl}`)
 
 export const sendMessageToQueue = async (body: any) => {
 
-  let params = {
+  const params = {
     MessageBody: JSON.stringify(body),
     MessageGroupId: 'co-aggregator-group',
     QueueUrl: queueUrl,
