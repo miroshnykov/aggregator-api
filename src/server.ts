@@ -75,6 +75,6 @@ setInterval(deleteFolder, 36000000, localPath) // 36000000 ms -> 10h
 setInterval(deleteFolder, 36000000, localPath + '_gz') // 36000000 ms ->  10h
 
 httpServer.listen(port, host, (): void => {
-  consola.success(`Server is running on http://${host}:${port} NODE_ENV:${process.env.NODE_ENV}`)
+  consola.success(`Server is running on http://${host}:${port} NODE_ENV:${process.env.NODE_ENV} Using node - { ${process.version} }`)
   consola.info(`S3_BUCKET_NAME:${process.env.S3_BUCKET_NAME}, AWS_ACCESS_KEY_ID:${process.env.AWS_ACCESS_KEY_ID}`)
 });
