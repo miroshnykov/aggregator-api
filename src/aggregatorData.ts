@@ -49,7 +49,7 @@ const sendToAffIdsToSqs = async () => {
 
 }
 
-setInterval(sendToAffIdsToSqs, 7200000) // 7200000ms -> 2h  28800000 ms -> 8h  300000 -> 5 MIN FOR TEST
+setInterval(sendToAffIdsToSqs, 300000) // 7200000ms -> 2h  28800000 ms -> 8h  300000 -> 5 MIN FOR TEST
 
 export const aggregateDataProcessing = async (aggregationObject: object) => {
 
