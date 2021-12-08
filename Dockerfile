@@ -1,14 +1,25 @@
 FROM node:16.13.0-alpine3.14
 
-RUN apk add --no-cache redis
-
-WORKDIR /home/app
+WORKDIR /app
 
 COPY . .
 
-RUN npm install && npm run build && npm prune --production && npm install --production
+# Install modules, build and remove unnecessary modules after
+RUN npm install \
+    && npm run build \
+    && npm prune --production \
+    && npm install --production \
+    && rm -rf src \
+    && rm -f .npmrc
 
-EXPOSE 80
+FROM node:16.13.0-alpine3.14
 
-ENTRYPOINT redis-server --daemonize yes && \
-        npm run start
+RUN rm -rf /usr/local/lib/node_modules/npm/ /usr/local/bin/npm
+
+WORKDIR /app
+
+COPY --from=builder /app .
+
+EXPOSE 1089
+
+ENTRYPOINT ["node", "-r", "dotenv/config", "./dist/server.js", "dotenv_config_path=/run/secrets/environment"]
