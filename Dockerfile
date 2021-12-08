@@ -1,4 +1,4 @@
-FROM node:14.17-alpine3.14 AS builder
+FROM node:16.13.0-alpine3.14 AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ RUN npm install \
     && rm -rf src \
     && rm -f .npmrc
 
-FROM node:14.17-alpine3.14
+FROM node:16.13.0-alpine3.14
 
 RUN rm -rf /usr/local/lib/node_modules/npm/ /usr/local/bin/npm
 
