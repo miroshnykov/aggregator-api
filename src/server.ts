@@ -29,7 +29,16 @@ app.get('/reUploadToRedshift', (req: Request, res: Response) => {
   setTimeout(unprocessedS3Files, 2000, IFolder.UNPROCESSED)
   res.json({
     success: true,
-    info: `added to queue running after 2 seconds`
+    info: `added to queue  running after 2 seconds folder:{ ${IFolder.UNPROCESSED} }`
+  })
+})
+
+// https://aggregator.aezai.com/reUploadToRedshiftFailed
+app.get('/reUploadToRedshiftFailed', (req: Request, res: Response) => {
+  setTimeout(unprocessedS3Files, 2000, IFolder.FAILED)
+  res.json({
+    success: true,
+    info: `added to queue running after 2 seconds folder:{ ${IFolder.FAILED} } `
   })
 })
 
@@ -40,8 +49,8 @@ const aggregationObject: { [index: string]: any } = {}
 
 app.post('/offer', async (req: Request, res: Response) => {
   try {
-    let key: string = req.body.key
-    let time: string = req.body.time
+    const key: string = req.body.key
+    const time: string = req.body.time
 
     influxdb(200, `offer_get_click`)
 
@@ -59,7 +68,7 @@ app.post('/offer', async (req: Request, res: Response) => {
       aggregationObject[key] = {"time": time, "count": 1}
     }
     const countOfRecords = Object.keys(aggregationObject).length
-    let response = {
+    const response = {
       time,
       countOfRecords
     }

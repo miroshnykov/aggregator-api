@@ -60,6 +60,7 @@ export const copyZipFromS3Redshift = async (files: string[]) => {
         await copyS3Files(file, IFolder.PROCESSED)
       } else {
         consola.error(`Copy s3 Files to folder ${IFolder.FAILED} file:${file}`)
+        influxdb(500, `copy_s3_files_to_failed_folder`)
         await copyS3Files(file, IFolder.FAILED)
       }
 
@@ -142,7 +143,7 @@ export const unprocessedS3Files = async (folder: IFolder) => {
       Prefix: `${folder}/`,
     }
     let filesPath: string[] = []
-    let s3Objects = await s3.listObjects(params).promise();
+    const s3Objects = await s3.listObjects(params).promise();
     for (const content of s3Objects?.Contents!) {
       filesPath.push(content.Key!)
     }
@@ -152,7 +153,11 @@ export const unprocessedS3Files = async (folder: IFolder) => {
       await deleteS3Files(filePath)
     }
 
-    consola.info('reSend to redshift files:', filesPath)
+    if (filesPath.length === 0){
+      consola.warn(` ** unprocessedS3Files **  no files in folder: { ${folder} }  in bucket: { ${bucket} }`)
+    } else {
+      consola.warn(` ** unprocessedS3Files ** folder: { ${folder} }  in bucket: { ${bucket} } reSend to redshift files:`, filesPath)
+    }
 
   } catch (e) {
     console.log(e)
