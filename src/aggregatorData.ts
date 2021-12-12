@@ -57,20 +57,21 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
   const currentTime: number = Math.floor((new Date().getTime()) / 1000);
 
   const countRecords: number = Object.keys(aggregationObject).length
-  if (countRecords >= 1) {
-    consola.info(`Records:${countRecords} LIMIT_RECORDS:${LIMIT_RECORDS},  seconds have passed:${currentTime - getInitDateTime()!}, LIMIT_SECONDS:${LIMIT_SECONDS} ,  computerName:${computerName}`)
+  const secondLeft = currentTime - getInitDateTime()!
+  if (countRecords >= 1 && secondLeft > 50) {
+    consola.info(`Records:${countRecords} LIMIT_RECORDS:${LIMIT_RECORDS},  seconds have passed:${secondLeft}, LIMIT_SECONDS:${LIMIT_SECONDS}, computerName:{ ${computerName} }`)
   }
 
-  if (currentTime - getInitDateTime()! >= LIMIT_SECONDS
-    && countRecords >= 1
-  ) {
-    consola.info(`ComputerName:${computerName}, pass ${LIMIT_SECONDS} seconds with records count:${countRecords}, process at event we have only one records`)
-  }
+  // if (secondLeft >= LIMIT_SECONDS
+  //   && countRecords >= 1
+  // ) {
+  //   consola.info(`ComputerName:${computerName}, pass ${LIMIT_SECONDS} seconds with records count:${countRecords}, process at event we have only one records`)
+  // }
 
   if (countRecords >= LIMIT_RECORDS
     || (
       countRecords >= 1
-      && currentTime - getInitDateTime()! >= LIMIT_SECONDS
+      && secondLeft >= LIMIT_SECONDS
     )
   ) {
     try {
@@ -86,7 +87,7 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
         records += JSON.stringify(buffer) + "\n";
       }
       let recordsReady = records.slice(0, -1)
-      consola.info(`ComputerName:${computerName}. Lids count: { ${lids.length} }. Lids list:${lids}`)
+      consola.info(`Lids count: { ${lids.length} }. Lids list:${lids}, computerName:{ ${computerName} }`)
       // influxdb(200, `lids_pool_${computerName}_count_${lids.length}`)
       // @ts-ignore
       Object.keys(aggregationObject).forEach(k => delete aggregationObject[k])
@@ -99,7 +100,7 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
       await compressFile(filePath)
       await copyGz(filePath)
       await deleteFile(filePath)
-      consola.success(`DONE FIRST STEP computerName:${computerName}, create local gz file:${filePath}`)
+      consola.success(`DONE FIRST STEP create local gz file:${filePath} computerName:{ ${computerName} }`)
       setTimeout(fileGzProcessing, 2000)
     } catch (e) {
       influxdb(500, `aggregate_data_processing_error`)

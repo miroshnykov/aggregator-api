@@ -17,6 +17,9 @@ import {aggregateDataProcessing} from "./aggregatorData";
 import {redshiftClient, pool} from "./redshift";
 import {deleteFolder, getHumanDateFormat, getInitDateTime, setInitDateTime} from "./utils";
 import {IFolder, unprocessedS3Files} from "./S3Handle";
+import os from "os";
+
+const computerName = os.hostname()
 
 const localPath: string = `${process.cwd()}/${process.env.FOLDER_LOCAL}` || ''
 
@@ -58,7 +61,7 @@ app.post('/offer', async (req: Request, res: Response) => {
 
       const currentTime: number = Math.floor((new Date().getTime()) / 1000)
       const currentDateHuman = new Date(currentTime * 1000);
-      consola.info(`Setup setInitDateTime:${getHumanDateFormat(currentDateHuman)}`)
+      consola.info(`\nSetup setInitDateTime:${getHumanDateFormat(currentDateHuman)}, computerName:{ ${computerName} }`)
       setInitDateTime(currentTime)
     }
 
