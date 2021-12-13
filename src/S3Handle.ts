@@ -39,7 +39,7 @@ export const filesToS3 = async (files: string[]) => {
         await deleteFile(file)
       }
     }
-    consola.success(`DONE SECOND STEP computerName:${computerName}, send gz to s3:${JSON.stringify(files)}`)
+    consola.success(`DONE SECOND STEP  send gz to s3:${JSON.stringify(files)} computerName:{ ${computerName} }`)
 
   } catch (e) {
     influxdb(500, `files_to_s3_error`)
@@ -66,7 +66,7 @@ export const copyZipFromS3Redshift = async (files: string[]) => {
 
       await deleteS3Files(destPath)
     }
-    consola.success(`DONE THIRD STEP computerName:${computerName}, copy file to s3 folder-${IFolder.PROCESSED}, deleted files:${JSON.stringify(filesDestPath)}\n`)
+    consola.success(`DONE THIRD STEP copy file to s3 folder-${IFolder.PROCESSED}, deleted files:${JSON.stringify(filesDestPath)} computerName:{ ${computerName} }\n`)
   } catch (e) {
     consola.error('copyZipFromS3RedshiftError:', e)
   }
