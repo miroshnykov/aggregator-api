@@ -3,7 +3,7 @@ import consola from "consola";
 import * as moment from "moment-timezone";
 import NodeDir from "node-dir";
 
-let createAggrObjectTime: any = null
+let initDateTime: number | null = null
 import {influxdb} from "./metrics";
 
 export const generateFilePath = (localPath: string) => {
@@ -85,8 +85,14 @@ export const deleteFolder = (dirPath: string): Promise<string> => {
     resolve(dirPath)
   })
 };
-export const setCreateAggrObjectTime = (createAggrObject: any) => {
-  createAggrObjectTime = createAggrObject
+export const setInitDateTime = (dateTime: number | null): void => {
+  initDateTime = dateTime
 }
 
-export const getCreateAggrObjectTime = () => (createAggrObjectTime)
+export const getInitDateTime = (): number | null => (initDateTime)
+
+export const getHumanDateFormat = (date: Date): string => (replace(date.toISOString()))
+
+const replace = (str: string): string => (
+  str.replace(/T/, ' ').replace(/\..+/, '')
+)

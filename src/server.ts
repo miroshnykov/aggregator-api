@@ -15,8 +15,11 @@ const port: number = Number(process.env.PORT || '3001')
 
 import {aggregateDataProcessing} from "./aggregatorData";
 import {redshiftClient, pool} from "./redshift";
-import {deleteFolder, getCreateAggrObjectTime, setCreateAggrObjectTime} from "./utils";
+import {deleteFolder, getHumanDateFormat, getInitDateTime, setInitDateTime} from "./utils";
 import {IFolder, unprocessedS3Files} from "./S3Handle";
+import os from "os";
+
+const computerName = os.hostname()
 
 const localPath: string = `${process.cwd()}/${process.env.FOLDER_LOCAL}` || ''
 
@@ -29,7 +32,16 @@ app.get('/reUploadToRedshift', (req: Request, res: Response) => {
   setTimeout(unprocessedS3Files, 2000, IFolder.UNPROCESSED)
   res.json({
     success: true,
-    info: `added to queue running after 2 seconds`
+    info: `added to queue  running after 2 seconds folder:{ ${IFolder.UNPROCESSED} }`
+  })
+})
+
+// https://aggregator.aezai.com/reUploadToRedshiftFailed
+app.get('/reUploadToRedshiftFailed', (req: Request, res: Response) => {
+  setTimeout(unprocessedS3Files, 2000, IFolder.FAILED)
+  res.json({
+    success: true,
+    info: `added to queue running after 2 seconds folder:{ ${IFolder.FAILED} } `
   })
 })
 
@@ -40,14 +52,17 @@ const aggregationObject: { [index: string]: any } = {}
 
 app.post('/offer', async (req: Request, res: Response) => {
   try {
-    let key: string = req.body.key
-    let time: string = req.body.time
+    const key: string = req.body.key
+    const time: string = req.body.time
 
     influxdb(200, `offer_get_click`)
 
-    if (!getCreateAggrObjectTime()) {
-      consola.info('Setup setCreateAggrObjectTime')
-      setCreateAggrObjectTime(Math.floor((new Date().getTime()) / 1000))
+    if (!getInitDateTime()) {
+
+      const currentTime: number = Math.floor((new Date().getTime()) / 1000)
+      const currentDateHuman = new Date(currentTime * 1000);
+      consola.info(`\nSetup setInitDateTime:${getHumanDateFormat(currentDateHuman)}, computerName:{ ${computerName} }`)
+      setInitDateTime(currentTime)
     }
 
     if (key in aggregationObject) {
@@ -56,7 +71,7 @@ app.post('/offer', async (req: Request, res: Response) => {
       aggregationObject[key] = {"time": time, "count": 1}
     }
     const countOfRecords = Object.keys(aggregationObject).length
-    let response = {
+    const response = {
       time,
       countOfRecords
     }
@@ -75,6 +90,6 @@ setInterval(deleteFolder, 36000000, localPath) // 36000000 ms -> 10h
 setInterval(deleteFolder, 36000000, localPath + '_gz') // 36000000 ms ->  10h
 
 httpServer.listen(port, host, (): void => {
-  consola.success(`Server is running on http://${host}:${port} NODE_ENV:${process.env.NODE_ENV}`)
+  consola.success(`Server is running on http://${host}:${port} NODE_ENV:${process.env.NODE_ENV} Using node - { ${process.version} }`)
   consola.info(`S3_BUCKET_NAME:${process.env.S3_BUCKET_NAME}, AWS_ACCESS_KEY_ID:${process.env.AWS_ACCESS_KEY_ID}`)
 });

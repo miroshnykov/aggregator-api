@@ -39,7 +39,7 @@ export const filesToS3 = async (files: string[]) => {
         await deleteFile(file)
       }
     }
-    consola.success(`DONE SECOND STEP computerName:${computerName}, send gz to s3:${JSON.stringify(files)}`)
+    consola.success(`DONE SECOND STEP  send gz to s3:${JSON.stringify(files)} computerName:{ ${computerName} }`)
 
   } catch (e) {
     influxdb(500, `files_to_s3_error`)
@@ -60,12 +60,13 @@ export const copyZipFromS3Redshift = async (files: string[]) => {
         await copyS3Files(file, IFolder.PROCESSED)
       } else {
         consola.error(`Copy s3 Files to folder ${IFolder.FAILED} file:${file}`)
+        influxdb(500, `copy_s3_files_to_failed_folder`)
         await copyS3Files(file, IFolder.FAILED)
       }
 
       await deleteS3Files(destPath)
     }
-    consola.success(`DONE THIRD STEP computerName:${computerName}, copy file to s3 folder-${IFolder.PROCESSED}, deleted files:${JSON.stringify(filesDestPath)}\n`)
+    consola.success(`DONE THIRD STEP copy file to s3 folder-${IFolder.PROCESSED}, deleted files:${JSON.stringify(filesDestPath)} computerName:{ ${computerName} }\n`)
   } catch (e) {
     consola.error('copyZipFromS3RedshiftError:', e)
   }
@@ -142,7 +143,7 @@ export const unprocessedS3Files = async (folder: IFolder) => {
       Prefix: `${folder}/`,
     }
     let filesPath: string[] = []
-    let s3Objects = await s3.listObjects(params).promise();
+    const s3Objects = await s3.listObjects(params).promise();
     for (const content of s3Objects?.Contents!) {
       filesPath.push(content.Key!)
     }
@@ -152,7 +153,11 @@ export const unprocessedS3Files = async (folder: IFolder) => {
       await deleteS3Files(filePath)
     }
 
-    consola.info('reSend to redshift files:', filesPath)
+    if (filesPath.length === 0){
+      consola.warn(` ** unprocessedS3Files **  no files in folder: { ${folder} }  in bucket: { ${bucket} }`)
+    } else {
+      consola.warn(` ** unprocessedS3Files ** folder: { ${folder} }  in bucket: { ${bucket} } reSend to redshift files:`, filesPath)
+    }
 
   } catch (e) {
     console.log(e)
@@ -188,7 +193,7 @@ export const copyS3ToRedshift = async (destPath: string) => {
   let dbRedshift = `${process.env.REDSHIFT_SCHEMA}.${process.env.REDSHIFT_TABLE}`
   let bucket = process.env.S3_BUCKET_NAME
   let queryCopy = `COPY ${dbRedshift} FROM 's3://${bucket}/${destPath}' CREDENTIALS 'aws_access_key_id=${awsKey};aws_secret_access_key=${awsSecretKey}' format as json 'auto' gzip MAXERROR 5 ACCEPTINVCHARS TRUNCATECOLUMNS TRIMBLANKS`;
-  // consola.info('queryCopy:', queryCopy)
+  consola.info('queryCopy:', queryCopy)
   try {
     await client.query(queryCopy)
     consola.info(`File ${destPath} added to redshift successfully`)

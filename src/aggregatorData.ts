@@ -5,17 +5,19 @@ import {
   deleteFile,
   generateFilePath,
   getLocalFiles,
-  getCreateAggrObjectTime,
-  setCreateAggrObjectTime
+  getInitDateTime,
+  setInitDateTime
 } from "./utils";
 import path from "path";
 import {compressFile, copyGz} from "./zip";
 import consola from "consola";
-import {copyS3Files, copyZipFromS3Redshift, filesToS3} from "./S3Handle";
+import {copyZipFromS3Redshift, filesToS3} from "./S3Handle";
 import {createDeflateRaw} from "zlib";
 import {sendMessageToQueue} from "./sqs"
 import {influxdb} from "./metrics";
 import os from "os"
+import {LIMIT_RECORDS, LIMIT_SECONDS} from "./constants";
+
 const computerName = os.hostname()
 
 const localPath: string = `${process.cwd()}/${process.env.FOLDER_LOCAL}` || ''
@@ -25,7 +27,7 @@ const affiliateIdsUnique = new Set();
 
 const sendToAffIdsToSqs = async () => {
   try {
-    let uniques = Array.from(affiliateIdsUnique)
+    const uniques = Array.from(affiliateIdsUnique)
     if (uniques.length === 0) return
 
     const messageBody = {
@@ -37,35 +39,40 @@ const sendToAffIdsToSqs = async () => {
     }
 
     consola.info(`Added to SQS  Body:${JSON.stringify(messageBody)}`)
-    let sqsData = await sendMessageToQueue(messageBody)
+    const sqsData = await sendMessageToQueue(messageBody)
     influxdb(200, `send_to_affIds_to_sqs_success`)
     consola.info(`sqsData:${JSON.stringify(sqsData)}`)
     affiliateIdsUnique.clear()
   } catch (e) {
     influxdb(500, `send_to_affIds_to_sqs_error`)
-    consola.error('')
+    consola.error('sendToAffIdsToSqsError:', e)
   }
 
 }
 
-setInterval(sendToAffIdsToSqs, 7200000) // 7200000ms -> 2h  28800000 ms -> 8h  300000 -> 5 MIN FOR TEST
+setInterval(sendToAffIdsToSqs, 7200000) // 7200000 ms -> 2h  28800000 ms -> 8h  300000 -> 5 MIN FOR TEST
 
 export const aggregateDataProcessing = async (aggregationObject: object) => {
 
-  let currentTime = Math.floor((new Date().getTime()) / 1000);
-  // if (getCreateAggrObjectTime()) {
-  //   consola.info(`Create Aggregate Object init computerName:${computerName}, second left:${currentTime - getCreateAggrObjectTime()}`)
+  const currentTime: number = Math.floor((new Date().getTime()) / 1000);
+
+  const countRecords: number = Object.keys(aggregationObject).length
+  const secondLeft = currentTime - getInitDateTime()!
+  if (countRecords >= 1 && secondLeft > 50) {
+    consola.info(`Records:${countRecords} LIMIT_RECORDS:${LIMIT_RECORDS},  seconds have passed:${secondLeft}, LIMIT_SECONDS:${LIMIT_SECONDS}, computerName:{ ${computerName} }`)
+  }
+
+  // if (secondLeft >= LIMIT_SECONDS
+  //   && countRecords >= 1
+  // ) {
+  //   consola.info(`ComputerName:${computerName}, pass ${LIMIT_SECONDS} seconds with records count:${countRecords}, process at event we have only one records`)
   // }
-  if (Object.keys(aggregationObject).length >= 1) {
-    consola.info(`Clicks in pool count:${Object.keys(aggregationObject).length} computerName:${computerName} second left:${currentTime - getCreateAggrObjectTime()}`)
-  }
 
-  if (getCreateAggrObjectTime() && currentTime - getCreateAggrObjectTime() >= 60 && Object.keys(aggregationObject).length >= 1) { // 60 sec
-    consola.info(`ComputerName:${computerName}, pass 60 sec with records count:${Object.keys(aggregationObject).length}, process at event we have only one records`)
-  }
-
-  if (Object.keys(aggregationObject).length >= 20
-    || (Object.keys(aggregationObject).length >= 1 && getCreateAggrObjectTime() && currentTime - getCreateAggrObjectTime() >= 60) // 60 sec
+  if (countRecords >= LIMIT_RECORDS
+    || (
+      countRecords >= 1
+      && secondLeft >= LIMIT_SECONDS
+    )
   ) {
     try {
       let lids: Array<string> = []
@@ -80,10 +87,11 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
         records += JSON.stringify(buffer) + "\n";
       }
       let recordsReady = records.slice(0, -1)
-      consola.info(`ComputerName:${computerName}. Lids count${lids.length}:${lids}`)
+      consola.info(`Lids count: { ${lids.length} }. Lids list:${lids}, computerName:{ ${computerName} }`)
+      // influxdb(200, `lids_pool_${computerName}_count_${lids.length}`)
       // @ts-ignore
       Object.keys(aggregationObject).forEach(k => delete aggregationObject[k])
-      setCreateAggrObjectTime(null)
+      setInitDateTime(null)
       // @ts-ignore
       let filePath = generateFilePath(localPath) || ''
       let fileFolder = path.dirname(filePath);
@@ -92,7 +100,7 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
       await compressFile(filePath)
       await copyGz(filePath)
       await deleteFile(filePath)
-      consola.success(`DONE FIRST STEP computerName:${computerName}, create local gz file:${filePath}`)
+      consola.success(`DONE FIRST STEP create local gz file:${filePath} computerName:{ ${computerName} }`)
       setTimeout(fileGzProcessing, 2000)
     } catch (e) {
       influxdb(500, `aggregate_data_processing_error`)
