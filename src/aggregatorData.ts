@@ -80,13 +80,13 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
       for (const [key, value] of Object.entries(aggregationObject)) {
         let buffer = JSON.parse(Base64.decode(key))
         buffer.click = value.count;
-        let timeCurrent: number = new Date().getTime()
+        const timeCurrent: number = new Date().getTime()
         affiliateIdsUnique.add(buffer.affiliate_id)
         lids.push(buffer.lid)
         buffer.date_added = Math.floor(timeCurrent / 1000)
         records += JSON.stringify(buffer) + "\n";
       }
-      let recordsReady = records.slice(0, -1)
+      const recordsReady = records.slice(0, -1)
       consola.info(`Lids count: { ${lids.length} }. Lids list:${lids}, computerName:{ ${computerName} }`)
       // influxdb(200, `lids_pool_${computerName}_count_${lids.length}`)
       // @ts-ignore
