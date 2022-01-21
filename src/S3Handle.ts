@@ -167,6 +167,7 @@ export const copyZipFromS3Redshift = async (files: string[]) => {
     }
     consola.success(`DONE THIRD STEP copy file to s3 folder-${IFolder.PROCESSED}, deleted files:${JSON.stringify(filesDestPath)} computerName:{ ${computerName} }\n`);
   } catch (e) {
+    influxdb(500, 'copy_zip_from_s3_redshift_error');
     consola.error('copyZipFromS3RedshiftError:', e);
   }
 };
@@ -193,10 +194,13 @@ export const unprocessedS3Files = async (folder: IFolder) => {
 
     if (filesPath.length === 0) {
       consola.warn(` ** unprocessedS3Files **  no files in folder: { ${folder} }  in bucket: { ${bucket} }`);
+      influxdb(200, `unprocessed_s3_files_${folder}_no_files`);
     } else {
       consola.warn(` ** unprocessedS3Files ** folder: { ${folder} }  in bucket: { ${bucket} } reSend to redshift files:`, filesPath);
+      influxdb(200, `unprocessed_s3_files_${folder}_send_success`);
     }
   } catch (e) {
     consola.error(e);
+    influxdb(500, `unprocessed_s3_files_error_${folder}`);
   }
 };

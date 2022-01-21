@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node-dev --files --respawn src/server.ts",
+    "dev": "ts-node-dev --transpile-only --files --respawn src/server.ts",
     "debug": "0x -- node -r dotenv/config ./dist/server.js dotenv_config_path=.env",
     "build": "tsc",
     "lint": "npx eslint ./src --ext .ts",

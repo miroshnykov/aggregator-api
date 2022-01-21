@@ -87,6 +87,9 @@ setInterval(aggregateDataProcessing, 9000, aggregationObject);
 setInterval(deleteFolder, 36000000, localPath); // 36000000 ms -> 10h
 setInterval(deleteFolder, 36000000, `${localPath}_gz`); // 36000000 ms ->  10h
 
+setInterval(unprocessedS3Files, 32400000, IFolder.FAILED); // 32400000 ms ->  9h
+setInterval(unprocessedS3Files, 28800000, IFolder.UNPROCESSED); // 28800000 ms ->  8h
+
 httpServer.listen(port, host, (): void => {
   consola.success(`Server is running on http://${host}:${port} NODE_ENV:${process.env.NODE_ENV} Using node - { ${process.version} }`);
   consola.info(`S3_BUCKET_NAME:${process.env.S3_BUCKET_NAME}, AWS_ACCESS_KEY_ID:${process.env.AWS_ACCESS_KEY_ID}`);
