@@ -7,3 +7,4 @@
 .DS_Store
 /unprocessed_json/
 /unprocessed_json_gz/
+*.0x
