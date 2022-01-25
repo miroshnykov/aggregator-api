@@ -1,6 +1,6 @@
-import fs from 'fs';
-import zlib from 'zlib';
-import path from 'path';
+import fs from 'node:fs';
+import zlib from 'node:zlib';
+import path from 'node:path';
 import consola from 'consola';
 import { createRecursiveFolder } from './utils';
 import { influxdb } from './metrics';
