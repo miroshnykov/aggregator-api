@@ -1,9 +1,9 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import AWS from 'aws-sdk';
 import consola from 'consola';
 import { ManagedUpload } from 'aws-sdk/lib/s3/managed_upload';
 import * as dotenv from 'dotenv';
-import os from 'os';
+import os from 'node:os';
 import SendData = ManagedUpload.SendData;
 
 import { pool } from './redshift';

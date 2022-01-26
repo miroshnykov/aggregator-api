@@ -1,11 +1,11 @@
-import { createServer } from 'http';
+import { createServer } from 'node:http';
 import 'dotenv/config';
 import consola from 'consola';
 
 import express, {
   Application, Request, Response,
 } from 'express';
-import os from 'os';
+import os from 'node:os';
 import { influxdb } from './metrics';
 
 import { aggregateDataProcessing } from './aggregatorData';
