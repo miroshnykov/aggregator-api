@@ -13,6 +13,8 @@ import {
   deleteFolder, getHumanDateFormat, getInitDateTime, setInitDateTime,
 } from './utils';
 import { IFolder, unprocessedS3Files } from './S3Handle';
+import { insertBonusLid } from './redshift';
+import { IBonusLidRes } from './Interfaces/traffic';
 
 const app: Application = express();
 const httpServer = createServer(app);
@@ -79,6 +81,28 @@ app.post('/offer', async (req: Request, res: Response) => {
   } catch (e) {
     consola.error(e);
     res.json({ err: e });
+  }
+});
+
+app.post('/lidBonus', async (req: Request, res: Response) => {
+  const { time } = req.body;
+  const { stats } = req.body;
+
+  const response: IBonusLidRes = {
+    time,
+    success: false,
+  };
+  try {
+    const insertBonusLidRes: boolean = await insertBonusLid(stats);
+    if (insertBonusLidRes) {
+      response.success = true;
+    }
+    res.status(200).json(response);
+  } catch (e) {
+    consola.error(e);
+    response.errors = JSON.stringify(e);
+    response.success = false;
+    res.status(500).json(response);
   }
 });
 
