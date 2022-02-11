@@ -6,6 +6,7 @@ import express, {
   Application, Request, Response,
 } from 'express';
 import os from 'node:os';
+import md5 from 'md5';
 import { influxdb } from './metrics';
 
 import { aggregateDataProcessing } from './aggregatorData';
@@ -85,14 +86,23 @@ app.post('/offer', async (req: Request, res: Response) => {
 });
 
 app.post('/lidBonus', async (req: Request, res: Response) => {
-  const { time } = req.body;
   const { stats } = req.body;
-
+  const { hash } = req.body;
+  const { timestamp } = req.body;
   const response: IBonusLidRes = {
-    time,
+    timestamp,
     success: false,
   };
   try {
+    const secret = process.env.GATEWAY_API_SECRET;
+    const checkHash = md5(`${timestamp}|${secret}`);
+
+    if (checkHash !== hash) {
+      response.errors = 'Broken hash';
+      res.status(200).json(response);
+      return;
+    }
+
     const insertBonusLidRes: boolean = await insertBonusLid(stats);
     if (insertBonusLidRes) {
       response.success = true;

@@ -41,6 +41,6 @@ export interface ITraffic {
 
 export interface IBonusLidRes {
   success: boolean,
-  time: number
+  timestamp: number
   errors?: string
 }
