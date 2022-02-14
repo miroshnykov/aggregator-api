@@ -111,7 +111,6 @@ app.post('/lidBonus', async (req: Request, res: Response) => {
   } catch (e) {
     consola.error(e);
     response.errors = JSON.stringify(e);
-    response.success = false;
     res.status(500).json(response);
   }
 });

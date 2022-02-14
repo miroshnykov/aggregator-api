@@ -100,6 +100,7 @@ export const copyS3ToRedshift = async (destPath: string) => {
   } catch (e) {
     influxdb(500, `copy_file_s3_to_redshift_error_${computerName}`);
     consola.error('copyS3ToRedshiftError:', e);
+    return false;
   }
 };
 
@@ -151,7 +152,7 @@ export const copyZipFromS3Redshift = async (files: string[]) => {
       const destPath = `unprocessed/${computerName}/co-offers/${file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)}`;
       filesDestPath.push(destPath!);
       // eslint-disable-next-line no-await-in-loop
-      const copyS3ToRedshiftResponse = await copyS3ToRedshift(destPath);
+      const copyS3ToRedshiftResponse: boolean = await copyS3ToRedshift(destPath);
       if (copyS3ToRedshiftResponse) {
         // eslint-disable-next-line no-await-in-loop
         await copyS3Files(file, IFolder.PROCESSED);
@@ -187,17 +188,13 @@ export const unprocessedS3Files = async (folder: IFolder) => {
 
     for (const filePath of filesPath) {
       // eslint-disable-next-line no-await-in-loop
-      await copyS3ToRedshift(filePath);
-      // eslint-disable-next-line no-await-in-loop
-      await deleteS3Files(filePath);
-    }
-
-    if (filesPath.length === 0) {
-      consola.warn(` ** unprocessedS3Files **  no files in folder: { ${folder} }  in bucket: { ${bucket} }`);
-      influxdb(200, `unprocessed_s3_files_${folder}_no_files`);
-    } else {
-      consola.warn(` ** unprocessedS3Files ** folder: { ${folder} }  in bucket: { ${bucket} } reSend to redshift files:`, filesPath);
-      influxdb(200, `unprocessed_s3_files_${folder}_send_success`);
+      const copyS3ToRedshiftResponse: boolean = await copyS3ToRedshift(filePath);
+      if (copyS3ToRedshiftResponse) {
+        // eslint-disable-next-line no-await-in-loop
+        await deleteS3Files(filePath);
+        consola.warn(` ** unprocessedS3Files ** folder: { ${folder} }  in bucket: { ${bucket} } reSend to redshift files:`, filePath);
+        influxdb(200, `unprocessed_s3_files_${folder}_send_success`);
+      }
     }
   } catch (e) {
     consola.error(e);
