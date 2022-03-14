@@ -1,7 +1,7 @@
 import Base64 from 'js-base64';
-import path from 'path';
+import path from 'node:path';
 import consola from 'consola';
-import os from 'os';
+import os from 'node:os';
 import {
   appendToLocalFile,
   createRecursiveFolder,
@@ -61,6 +61,7 @@ const fileGzProcessing = async () => {
     }
     await filesToS3(files);
     setTimeout(copyZipFromS3Redshift, 2000, files);
+    // process.nextTick(copyZipFromS3Redshift, files);
     // await copyZipFromS3Redshift(files)
   } catch (e) {
     influxdb(500, 'file_gz_processing_error');

@@ -20,6 +20,6 @@ WORKDIR /app
 
 COPY --from=builder /app .
 
-EXPOSE 1089
+EXPOSE 1089 2089
 
 ENTRYPOINT ["node", "-r", "dotenv/config", "./dist/server.js", "dotenv_config_path=/run/secrets/environment"]

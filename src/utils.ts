@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import consola from 'consola';
 import * as moment from 'moment-timezone';
 import NodeDir from 'node-dir';
