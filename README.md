@@ -53,5 +53,6 @@ REDSHIFT_DATABASE =
     import * as fs from 'node:fs';
     https://nodejs.org/api/esm.html#node-imports
 
+
 # diagram
 ![](diagram-co-traffic.png)
