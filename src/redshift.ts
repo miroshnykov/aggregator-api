@@ -58,6 +58,7 @@ export const insertBonusLid = async (data: ITraffic) => {
     date_added,
     click,
     event_type,
+    event,
     referer,
     fingerprint,
     is_unique_visit,
@@ -100,6 +101,7 @@ export const insertBonusLid = async (data: ITraffic) => {
                                                                       date_added,
                                                                       click,
                                                                       referer,
+                                                                      event,
                                                                       fingerprint,
                                                                       is_unique_visit)
              VALUES (   '${lid}',
@@ -136,6 +138,7 @@ export const insertBonusLid = async (data: ITraffic) => {
                         ${dateAdd},
                         ${click},
                         '${referer}',
+                        '${event}',
                         '${fingerprint}',
                         ${is_unique_visit}
         );

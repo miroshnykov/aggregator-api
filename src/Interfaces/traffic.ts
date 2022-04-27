@@ -34,6 +34,7 @@ export interface ITraffic {
   date_added: number
   click: number
   event_type: string
+  event: string
   referer?: string
   fingerprint?: string
   is_unique_visit?: boolean
