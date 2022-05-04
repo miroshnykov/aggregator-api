@@ -100,6 +100,7 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
         affiliateIdsUnique.add(buffer.affiliate_id);
         lids.push(buffer.lid);
         buffer.date_added = Math.floor(timeCurrent / 1000);
+        buffer.event = `${buffer.event}-${computerName}`;
         records += `${JSON.stringify(buffer)}\n`;
       }
       const recordsReady = records.slice(0, -1);
