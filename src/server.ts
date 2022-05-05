@@ -32,6 +32,7 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // https://aggregator.aezai.com/reUploadToRedshift
+// https://aggregator.stage.aezai.com/reUploadToRedshift
 app.get('/reUploadToRedshift', (req: Request, res: Response) => {
   setTimeout(unprocessedS3Files, 2000, IFolder.UNPROCESSED);
   res.json({
