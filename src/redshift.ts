@@ -11,6 +11,10 @@ export const redshiftClient = new Client({
   port: Number(process.env.REDSHIFT_PORT || 5439),
 });
 
+consola.info('REDSHIFT_USER:', process.env.REDSHIFT_USER);
+consola.info('REDSHIFT_HOST:', process.env.REDSHIFT_HOST);
+consola.info('REDSHIFT_DATABASE:', process.env.REDSHIFT_DATABASE);
+
 export const pool = new Pool({
   user: process.env.REDSHIFT_USER,
   host: process.env.REDSHIFT_HOST,

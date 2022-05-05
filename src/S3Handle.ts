@@ -28,6 +28,9 @@ AWS.config.update({
 });
 const s3 = new AWS.S3();
 
+consola.info('AWS_ACCESS_KEY_ID:', process.env.AWS_ACCESS_KEY_ID);
+consola.info('AWS_SECRET_ACCESS_KEY:', process.env.AWS_SECRET_ACCESS_KEY);
+
 // eslint-disable-next-line consistent-return
 const uploadFileToS3Bucket = async (file: string) => {
   try {
