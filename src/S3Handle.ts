@@ -28,8 +28,8 @@ AWS.config.update({
 });
 const s3 = new AWS.S3();
 
-consola.info('AWS_ACCESS_KEY_ID:', process.env.AWS_ACCESS_KEY_ID);
-consola.info('AWS_SECRET_ACCESS_KEY:', process.env.AWS_SECRET_ACCESS_KEY);
+// consola.info('AWS_ACCESS_KEY_ID:', process.env.AWS_ACCESS_KEY_ID);
+// consola.info('AWS_SECRET_ACCESS_KEY:', process.env.AWS_SECRET_ACCESS_KEY);
 
 // eslint-disable-next-line consistent-return
 const uploadFileToS3Bucket = async (file: string) => {
@@ -92,11 +92,8 @@ export const copyS3ToRedshift = async (destPath: string) => {
   const awsSecretKey = process.env.AWS_SECRET_ACCESS_KEY;
   const dbRedshift = `${process.env.REDSHIFT_SCHEMA}.${process.env.REDSHIFT_TABLE}`;
   const bucket = process.env.S3_BUCKET_NAME;
-  consola.info('AWS_ACCESS_KEY_ID:', process.env.AWS_ACCESS_KEY_ID);
-  consola.info('AWS_SECRET_ACCESS_KEY:', process.env.AWS_SECRET_ACCESS_KEY);
-  consola.info('dbRedshift:', dbRedshift);
   const queryCopy = `COPY ${dbRedshift} FROM 's3://${bucket}/${destPath}' CREDENTIALS 'aws_access_key_id=${awsKey};aws_secret_access_key=${awsSecretKey}' format as json 'auto' gzip MAXERROR 5 ACCEPTINVCHARS TRUNCATECOLUMNS TRIMBLANKS`;
-  consola.info('queryCopy:', queryCopy);
+  // consola.info('queryCopy:', queryCopy);
   try {
     await client.query(queryCopy);
     consola.info(`File ${destPath} added to redshift successfully`);
