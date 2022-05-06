@@ -135,7 +135,7 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
 
 setInterval(() => {
   if (checkDuplicateLids.length > 5000) {
-    consola.info('Reset checkDuplicateLids array:', checkDuplicateLids);
+    consola.info('Reset checkDuplicateLids array:');
     checkDuplicateLids = [];
   }
 }, 20000);
