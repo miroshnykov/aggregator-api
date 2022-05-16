@@ -14,8 +14,9 @@ import {
   deleteFolder, getHumanDateFormat, getInitDateTime, setInitDateTime,
 } from './utils';
 import { IFolder, unprocessedS3Files } from './S3Handle';
-import { insertBonusLid } from './redshift';
+import { insertBonusLid, selectLid } from './redshift';
 import { IBonusLidRes } from './Interfaces/traffic';
+import { sendLidDynamoDb } from './dynamoDb';
 
 const app: Application = express();
 const httpServer = createServer(app);
@@ -34,20 +35,75 @@ app.get('/health', (req: Request, res: Response) => {
 // https://aggregator.aezai.com/reUploadToRedshift
 // https://aggregator.stage.aezai.com/reUploadToRedshift
 app.get('/reUploadToRedshift', (req: Request, res: Response) => {
-  setTimeout(unprocessedS3Files, 2000, IFolder.UNPROCESSED);
-  res.json({
-    success: true,
-    info: `added to queue  running after 2 seconds folder:{ ${IFolder.UNPROCESSED} }`,
-  });
+  try {
+    if (!req.query.hash || req.query.hash !== process.env.GATEWAY_API_SECRET) {
+      throw Error('broken key');
+    }
+    setTimeout(unprocessedS3Files, 2000, IFolder.UNPROCESSED);
+    res.json({
+      success: true,
+      info: `added to queue  running after 2 seconds folder:{ ${IFolder.UNPROCESSED} }`,
+    });
+  } catch (e: any) {
+    res.json({
+      success: false,
+      info: e.toString(),
+    });
+  }
 });
 
 // https://aggregator.aezai.com/reUploadToRedshiftFailed
 app.get('/reUploadToRedshiftFailed', (req: Request, res: Response) => {
-  setTimeout(unprocessedS3Files, 2000, IFolder.FAILED);
-  res.json({
-    success: true,
-    info: `added to queue running after 2 seconds folder:{ ${IFolder.FAILED} } `,
-  });
+  try {
+    if (!req.query.hash || req.query.hash !== process.env.GATEWAY_API_SECRET) {
+      throw Error('broken key');
+    }
+    setTimeout(unprocessedS3Files, 2000, IFolder.FAILED);
+    res.json({
+      success: true,
+      info: `added to queue running after 2 seconds folder:{ ${IFolder.FAILED} } `,
+    });
+  } catch (e: any) {
+    res.json({
+      success: false,
+      info: e.toString(),
+    });
+  }
+});
+
+// http://localhost:9002/reSendLidToDynamoDb?lid=764a3590-3533-4c53-a88a-4bc9d23d6899&hash=
+// https://aggregator.aezai.com/reSendLidToDynamoDb?lid=764a3590-3533-4c53-a88a-4bc9d23d6899&hash=
+app.get('/reSendLidToDynamoDb', async (req: Request, res: Response) => {
+  try {
+    if (!req.query.hash || req.query.hash !== process.env.GATEWAY_API_SECRET) {
+      throw Error('broken key');
+    }
+    const lid: string = String(req.query.lid!) || '';
+    const hash: string = String(req.query.hash!) || '';
+    consola.info('lid input:', lid);
+    consola.info('hash input:', hash);
+
+    const lidInfo = await selectLid(lid);
+
+    if (!lidInfo) {
+      throw Error(`lid:${lid} does not exists in redshift ${process.env.REDSHIFT_HOST}`);
+    }
+    const response = await sendLidDynamoDb(lidInfo[0]);
+    if (!response) {
+      throw Error(`lid:${lid} does not create in DynamoDb table ${process.env.AWS_DYNAMODB_TABLE_NAME}`);
+    }
+
+    res.json({
+      success: true,
+      lid,
+      info: response,
+    });
+  } catch (e: any) {
+    res.json({
+      success: false,
+      info: e.toString(),
+    });
+  }
 });
 
 app.use(express.json());
