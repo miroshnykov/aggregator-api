@@ -65,7 +65,7 @@ export const selectLid = async (lid: string) => {
 
   const lidData = await client.query(query);
   client.release();
-  return lidData.rows.length !== 0 ? lidData.rows : false;
+  return lidData.rows.length !== 0 && lidData.rows[0];
 };
 
 export const insertBonusLid = async (data: ITraffic) => {

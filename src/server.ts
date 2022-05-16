@@ -72,7 +72,8 @@ app.get('/reUploadToRedshiftFailed', (req: Request, res: Response) => {
 });
 
 // http://localhost:9002/reSendLidToDynamoDb?lid=764a3590-3533-4c53-a88a-4bc9d23d6899&hash=
-// https://aggregator.aezai.com/reSendLidToDynamoDb?lid=764a3590-3533-4c53-a88a-4bc9d23d6899&hash=
+// https://aggregator.aezai.com/reSendLidToDynamoDb?lid=764a3590-3533-4c53-a88a-4bc9d23d6899&hash=SECRET
+
 app.get('/reSendLidToDynamoDb', async (req: Request, res: Response) => {
   try {
     if (!req.query.hash || req.query.hash !== process.env.GATEWAY_API_SECRET) {
@@ -80,15 +81,51 @@ app.get('/reSendLidToDynamoDb', async (req: Request, res: Response) => {
     }
     const lid: string = String(req.query.lid!) || '';
     const hash: string = String(req.query.hash!) || '';
-    consola.info('lid input:', lid);
-    consola.info('hash input:', hash);
+    consola.info(`lid ${lid} hash ${hash}`);
 
-    const lidInfo = await selectLid(lid);
-
+    const lidInfo: any = await selectLid(lid);
     if (!lidInfo) {
       throw Error(`lid:${lid} does not exists in redshift ${process.env.REDSHIFT_HOST}`);
     }
-    const response = await sendLidDynamoDb(lidInfo[0]);
+
+    // eslint-disable-next-line prefer-destructuring
+    const convertToLidDynamoDb = {
+      lid: lidInfo.lid,
+      affiliateId: +lidInfo.affiliate_id! || 0,
+      campaignId: +lidInfo.campaign_id! || 0,
+      sub_campaign: lidInfo.subCampaign! || '',
+      offerId: +lidInfo.offer_id! || 0,
+      offerName: lidInfo.offer_name! || '',
+      offerType: lidInfo.offer_type! || '',
+      offerDescription: lidInfo.offer_description! || '',
+      landingPageUrl: lidInfo.landing_page || '',
+      landingPageId: +lidInfo.landing_page_id! || 0,
+      payin: lidInfo.payin || 0,
+      payout: lidInfo.payout || 0,
+      country: lidInfo.geo || '',
+      advertiserId: +lidInfo.advertiser_id! || 0,
+      advertiserManagerId: +lidInfo.advertiser_manager_id! || 0,
+      affiliateManagerId: +lidInfo.affiliate_manager_id! || 0,
+      originAdvertiserId: +lidInfo.origin_advertiser_id! || 0,
+      originConversionType: lidInfo.origin_conversion_type || '',
+      verticalId: lidInfo.verticals || 0,
+      verticalName: lidInfo.vertical_name || '',
+      conversionType: lidInfo.conversion_type || '',
+      platform: lidInfo.platform || '',
+      deviceType: lidInfo.device! || '',
+      os: lidInfo.os || '',
+      isp: lidInfo.isp || '',
+      referer: lidInfo.referer || '',
+    };
+
+    // res.json({
+    //   success: true,
+    //   lid,
+    //   info: convertToLidDynamoDb,
+    // });
+    //
+    // return;
+    const response = await sendLidDynamoDb(convertToLidDynamoDb);
     if (!response) {
       throw Error(`lid:${lid} does not create in DynamoDb table ${process.env.AWS_DYNAMODB_TABLE_NAME}`);
     }
