@@ -17,6 +17,7 @@ import { IFolder, unprocessedS3Files } from './S3Handle';
 import { insertBonusLid, selectLid } from './redshift';
 import { IBonusLidRes } from './Interfaces/traffic';
 import { sendLidDynamoDb } from './dynamoDb';
+import { ILid } from './Interfaces/lid';
 
 const app: Application = express();
 const httpServer = createServer(app);
@@ -89,11 +90,11 @@ app.get('/reSendLidToDynamoDb', async (req: Request, res: Response) => {
     }
 
     // eslint-disable-next-line prefer-destructuring
-    const convertToLidDynamoDb = {
+    const convertToLidDynamoDb: ILid = {
       lid: lidInfo.lid,
       affiliateId: +lidInfo.affiliate_id! || 0,
       campaignId: +lidInfo.campaign_id! || 0,
-      sub_campaign: lidInfo.subCampaign! || '',
+      subCampaign: lidInfo.sub_campaign! || '',
       offerId: +lidInfo.offer_id! || 0,
       offerName: lidInfo.offer_name! || '',
       offerType: lidInfo.offer_type! || '',
@@ -116,6 +117,40 @@ app.get('/reSendLidToDynamoDb', async (req: Request, res: Response) => {
       os: lidInfo.os || '',
       isp: lidInfo.isp || '',
       referer: lidInfo.referer || '',
+      adDomain: '',
+      adPath: '',
+      domain: '',
+      advertiserName: '',
+      region: '',
+      IP: '',
+      sflServer: '',
+      userAgent: '',
+      browser: '',
+      browserEngine: '',
+      browserVersion: '',
+      payoutPercent: 0,
+      isCpmOptionEnabled: 0,
+      originPayIn: 0,
+      originPayOut: 0,
+      originAdvertiserName: '',
+      originIsCpmOptionEnabled: 0,
+      originOfferId: 0,
+      originVerticalId: 0,
+      originVerticalName: '',
+      landingPageIdOrigin: 0,
+      landingPageUrlOrigin: '',
+      capOverrideOfferId: 0,
+      offerIdRedirectExitTraffic: 0,
+      redirectType: '',
+      redirectReason: '',
+      capsType: '',
+      isUseDefaultOfferUrl: false,
+      nestedExitOfferSteps: '',
+      fingerPrintInfo: '',
+      fingerPrintKey: '',
+      isUniqueVisit: null,
+      eventType: '',
+      _messageType: '',
     };
 
     // res.json({

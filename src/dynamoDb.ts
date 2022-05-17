@@ -2,9 +2,10 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import consola from 'consola';
 import { influxdb } from './metrics';
+import { ILid } from './Interfaces/lid';
 
 // eslint-disable-next-line consistent-return
-export const sendLidDynamoDb = async (lidInfoToSend: any) => {
+export const sendLidDynamoDb = async (lidInfoToSend: ILid) => {
   try {
     const dynamoDbConf = {
       region: process.env.AWS_DYNAMODB_REGION,
