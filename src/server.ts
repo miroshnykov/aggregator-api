@@ -14,8 +14,10 @@ import {
   deleteFolder, getHumanDateFormat, getInitDateTime, setInitDateTime,
 } from './utils';
 import { IFolder, unprocessedS3Files } from './S3Handle';
-import { insertBonusLid } from './redshift';
+import { insertBonusLid, selectLid } from './redshift';
 import { IBonusLidRes } from './Interfaces/traffic';
+import { sendLidDynamoDb } from './dynamoDb';
+import { ILid } from './Interfaces/lid';
 
 const app: Application = express();
 const httpServer = createServer(app);
@@ -34,20 +36,146 @@ app.get('/health', (req: Request, res: Response) => {
 // https://aggregator.aezai.com/reUploadToRedshift
 // https://aggregator.stage.aezai.com/reUploadToRedshift
 app.get('/reUploadToRedshift', (req: Request, res: Response) => {
-  setTimeout(unprocessedS3Files, 2000, IFolder.UNPROCESSED);
-  res.json({
-    success: true,
-    info: `added to queue  running after 2 seconds folder:{ ${IFolder.UNPROCESSED} }`,
-  });
+  try {
+    if (!req.query.hash || req.query.hash !== process.env.GATEWAY_API_SECRET) {
+      throw Error('broken key');
+    }
+    setTimeout(unprocessedS3Files, 2000, IFolder.UNPROCESSED);
+    res.json({
+      success: true,
+      info: `added to queue  running after 2 seconds folder:{ ${IFolder.UNPROCESSED} }`,
+    });
+  } catch (e: any) {
+    res.json({
+      success: false,
+      info: e.toString(),
+    });
+  }
 });
 
 // https://aggregator.aezai.com/reUploadToRedshiftFailed
 app.get('/reUploadToRedshiftFailed', (req: Request, res: Response) => {
-  setTimeout(unprocessedS3Files, 2000, IFolder.FAILED);
-  res.json({
-    success: true,
-    info: `added to queue running after 2 seconds folder:{ ${IFolder.FAILED} } `,
-  });
+  try {
+    if (!req.query.hash || req.query.hash !== process.env.GATEWAY_API_SECRET) {
+      throw Error('broken key');
+    }
+    setTimeout(unprocessedS3Files, 2000, IFolder.FAILED);
+    res.json({
+      success: true,
+      info: `added to queue running after 2 seconds folder:{ ${IFolder.FAILED} } `,
+    });
+  } catch (e: any) {
+    res.json({
+      success: false,
+      info: e.toString(),
+    });
+  }
+});
+
+// http://localhost:9002/reSendLidToDynamoDb?lid=764a3590-3533-4c53-a88a-4bc9d23d6899&hash=
+// https://aggregator.aezai.com/reSendLidToDynamoDb?lid=764a3590-3533-4c53-a88a-4bc9d23d6899&hash=SECRET
+
+app.get('/reSendLidToDynamoDb', async (req: Request, res: Response) => {
+  try {
+    if (!req.query.hash || req.query.hash !== process.env.GATEWAY_API_SECRET) {
+      throw Error('broken key');
+    }
+    const lid: string = String(req.query.lid!) || '';
+    const hash: string = String(req.query.hash!) || '';
+    consola.info(`lid ${lid} hash ${hash}`);
+
+    const lidInfo: any = await selectLid(lid);
+    if (!lidInfo) {
+      throw Error(`lid:${lid} does not exists in redshift ${process.env.REDSHIFT_HOST}`);
+    }
+
+    // eslint-disable-next-line prefer-destructuring
+    const convertToLidDynamoDb: ILid = {
+      lid: lidInfo.lid,
+      affiliateId: +lidInfo.affiliate_id! || 0,
+      campaignId: +lidInfo.campaign_id! || 0,
+      subCampaign: lidInfo.sub_campaign! || '',
+      offerId: +lidInfo.offer_id! || 0,
+      offerName: lidInfo.offer_name! || '',
+      offerType: lidInfo.offer_type! || '',
+      offerDescription: lidInfo.offer_description! || '',
+      landingPageUrl: lidInfo.landing_page || '',
+      landingPageId: +lidInfo.landing_page_id! || 0,
+      payin: lidInfo.payin || 0,
+      payout: lidInfo.payout || 0,
+      country: lidInfo.geo || '',
+      advertiserId: +lidInfo.advertiser_id! || 0,
+      advertiserManagerId: +lidInfo.advertiser_manager_id! || 0,
+      affiliateManagerId: +lidInfo.affiliate_manager_id! || 0,
+      originAdvertiserId: +lidInfo.origin_advertiser_id! || 0,
+      originConversionType: lidInfo.origin_conversion_type || '',
+      verticalId: lidInfo.verticals || 0,
+      verticalName: lidInfo.vertical_name || '',
+      conversionType: lidInfo.conversion_type || '',
+      platform: lidInfo.platform || '',
+      deviceType: lidInfo.device! || '',
+      os: lidInfo.os || '',
+      isp: lidInfo.isp || '',
+      referer: lidInfo.referer || '',
+      adDomain: '',
+      adPath: '',
+      domain: '',
+      advertiserName: '',
+      region: '',
+      IP: '',
+      sflServer: '',
+      userAgent: '',
+      browser: '',
+      browserEngine: '',
+      browserVersion: '',
+      payoutPercent: 0,
+      isCpmOptionEnabled: 0,
+      originPayIn: 0,
+      originPayOut: 0,
+      originAdvertiserName: '',
+      originIsCpmOptionEnabled: 0,
+      originOfferId: 0,
+      originVerticalId: 0,
+      originVerticalName: '',
+      landingPageIdOrigin: 0,
+      landingPageUrlOrigin: '',
+      capOverrideOfferId: 0,
+      offerIdRedirectExitTraffic: 0,
+      redirectType: '',
+      redirectReason: '',
+      capsType: '',
+      isUseDefaultOfferUrl: false,
+      nestedExitOfferSteps: '',
+      fingerPrintInfo: '',
+      fingerPrintKey: '',
+      isUniqueVisit: null,
+      eventType: '',
+      _messageType: '',
+    };
+
+    // res.json({
+    //   success: true,
+    //   lid,
+    //   info: convertToLidDynamoDb,
+    // });
+    //
+    // return;
+    const response = await sendLidDynamoDb(convertToLidDynamoDb);
+    if (!response) {
+      throw Error(`lid:${lid} does not create in DynamoDb table ${process.env.AWS_DYNAMODB_TABLE_NAME}`);
+    }
+
+    res.json({
+      success: true,
+      lid,
+      info: response,
+    });
+  } catch (e: any) {
+    res.json({
+      success: false,
+      info: e.toString(),
+    });
+  }
 });
 
 app.use(express.json());

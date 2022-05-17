@@ -21,6 +21,53 @@ export const pool = new Pool({
   port: Number(process.env.REDSHIFT_PORT || 5439),
 });
 
+export const selectLid = async (lid: string) => {
+  const client = await pool.connect();
+  const query = `SELECT  lid,
+                         affiliate_id,
+                         campaign_id,
+                         offer_id,
+                         offer_name,
+                         offer_type,
+                         offer_description,
+                         landing_page,
+                         landing_page_id,
+                         payin,
+                         payout,
+                         geo,
+                         cap_override_offer_id,
+                         is_cpm_option_enabled,
+                         landing_page_id_origin,
+                         advertiser_id,
+                         advertiser_manager_id,
+                         affiliate_manager_id,
+                         origin_advertiser_id,
+                         origin_conversion_type,
+                         origin_is_cpm_option_enabled,
+                         origin_offer_id,
+                         origin_vertical_id,
+                         verticals,
+                         vertical_name,
+                         conversion_type,
+                         platform,
+                         payout_percent,
+                         device,
+                         os,
+                         isp,
+                         date_added,
+                         click,
+                         referer,
+                         event,
+                         fingerprint,
+                         is_unique_visit  
+                   FROM ${process.env.REDSHIFT_SCHEMA}.traffic
+                   where lid='${lid}'`;
+
+  const lidData = await client.query(query);
+  client.release();
+  return lidData.rows.length !== 0 && lidData.rows[0];
+};
+
 export const insertBonusLid = async (data: ITraffic) => {
   const client = await pool.connect();
   /* eslint-disable */
