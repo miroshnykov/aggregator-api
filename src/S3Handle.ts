@@ -10,6 +10,7 @@ import { pool } from './redshift';
 
 import { deleteFile } from './utils';
 import { influxdb } from './metrics';
+import { convertHrtime } from './convertHrtime';
 
 const computerName = os.hostname();
 
@@ -67,6 +68,7 @@ const uploadFileToS3Bucket = async (file: string) => {
 
 export const filesToS3 = async (files: string[]) => {
   try {
+    const startTime: bigint = process.hrtime.bigint();
     for (const file of files) {
       // consola.info('file:', file)
       // eslint-disable-next-line no-await-in-loop
@@ -77,7 +79,9 @@ export const filesToS3 = async (files: string[]) => {
         await deleteFile(file);
       }
     }
-    consola.success(`DONE SECOND STEP  send gz to s3:${JSON.stringify(files)} computerName:{ ${computerName} }`);
+    const endTime: bigint = process.hrtime.bigint();
+    const diffTime: bigint = endTime - startTime;
+    consola.success(`DONE SECOND STEP { filesToS3 } time { ${convertHrtime(diffTime)} } ms, send gz to s3:${JSON.stringify(files)} computerName:{ ${computerName} }`);
   } catch (e) {
     influxdb(500, 'files_to_s3_error');
     consola.error('s3Handle:', e);
@@ -93,8 +97,8 @@ export const copyS3ToRedshift = async (destPath: string) => {
   const dbRedshift = `${process.env.REDSHIFT_SCHEMA}.${process.env.REDSHIFT_TABLE}`;
   const bucket = process.env.S3_BUCKET_NAME;
   const queryCopy = `COPY ${dbRedshift} FROM 's3://${bucket}/${destPath}' CREDENTIALS 'aws_access_key_id=${awsKey};aws_secret_access_key=${awsSecretKey}' format as json 'auto' gzip MAXERROR 5 ACCEPTINVCHARS TRUNCATECOLUMNS TRIMBLANKS`;
-  consola.info(`REDSHIFT_HOST: { ${process.env.REDSHIFT_HOST} } REDSHIFT_USER: { ${process.env.REDSHIFT_USER} }  REDSHIFT_PORT: { ${process.env.REDSHIFT_PORT} } REDSHIFT_TABLE: { ${process.env.REDSHIFT_TABLE} } REDSHIFT_DATABASE: { ${process.env.REDSHIFT_DATABASE} } REDSHIFT_SCHEMA: { ${process.env.REDSHIFT_SCHEMA} }`);
-  consola.info('queryCopy:', queryCopy);
+  // consola.info(`REDSHIFT_HOST: { ${process.env.REDSHIFT_HOST} } REDSHIFT_USER: { ${process.env.REDSHIFT_USER} }  REDSHIFT_PORT: { ${process.env.REDSHIFT_PORT} } REDSHIFT_TABLE: { ${process.env.REDSHIFT_TABLE} } REDSHIFT_DATABASE: { ${process.env.REDSHIFT_DATABASE} } REDSHIFT_SCHEMA: { ${process.env.REDSHIFT_SCHEMA} }`);
+  // consola.info('queryCopy:', queryCopy);
   try {
     await client.query(queryCopy);
     consola.info(`File ${destPath} added to redshift successfully`);
@@ -114,7 +118,7 @@ export const copyS3Files = async (file: string, folder: IFolder) => {
   const destKey = `co-offers/${path}`;
 
   const bucket = process.env.S3_BUCKET_NAME || '';
-  consola.info(`CopyS3Files CopySource:${bucket}/${destPath}, Key:${folder}/${destKey}`);
+  // consola.info(`CopyS3Files CopySource:${bucket}/${destPath}, Key:${folder}/${destKey}`);
   return new Promise<boolean>((resolve) => {
     const params = {
       Bucket: bucket,
@@ -151,6 +155,7 @@ export const deleteS3Files = async (destPath: string) => new Promise<boolean>((r
 
 export const copyZipFromS3Redshift = async (files: string[]) => {
   try {
+    const startTime: bigint = process.hrtime.bigint();
     const filesDestPath: string[] = [];
     for (const file of files) {
       const destPath = `unprocessed/${computerName}/co-offers/${file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)}`;
@@ -170,7 +175,10 @@ export const copyZipFromS3Redshift = async (files: string[]) => {
       // eslint-disable-next-line no-await-in-loop
       await deleteS3Files(destPath);
     }
-    consola.success(`DONE THIRD STEP copy file to s3 folder-${IFolder.PROCESSED}, deleted files:${JSON.stringify(filesDestPath)} computerName:{ ${computerName} }\n`);
+    const endTime: bigint = process.hrtime.bigint();
+    const diffTime: bigint = endTime - startTime;
+    // consola.info(`Finish copy file to redshift time processing: { ${convertHrtime(diffTime)} } ms`);
+    consola.success(`DONE THIRD STEP { copyZipFromS3Redshift } time: { ${convertHrtime(diffTime)} } ms, copy file to s3 folder-${IFolder.PROCESSED}, deleted files:${JSON.stringify(filesDestPath)} computerName:{ ${computerName} }\n`);
   } catch (e) {
     influxdb(500, 'copy_zip_from_s3_redshift_error');
     consola.error('copyZipFromS3RedshiftError:', e);

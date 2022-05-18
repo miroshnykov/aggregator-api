@@ -32,8 +32,8 @@ export const appendToLocalFile = (filePath: string, data: any) => new Promise((r
       consola.error(`appendToLocalFileError ${filePath}:`, err);
       reject(err);
     }
+    resolve(filePath);
   });
-  resolve(filePath);
 });
 
 export const deleteFile = (filePath: string) => new Promise<string>((resolve, reject) => {
