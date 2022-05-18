@@ -26,10 +26,10 @@ export const createRecursiveFolder = (fileFolder: string) => new Promise<boolean
 });
 
 export const appendToLocalFile = (filePath: string, data: any) => new Promise((resolve, reject) => {
-  // @ts-ignore
-  fs.appendFileSync(filePath, data, (err: any) => {
-    if (err) {
+  fs.appendFile(filePath, data, (err: any) => {
+    if (!err) {
       influxdb(500, 'append_to_local_file_error');
+      consola.error(`appendToLocalFileError ${filePath}:`, err);
       reject(err);
     }
   });

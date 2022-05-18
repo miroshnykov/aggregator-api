@@ -23,7 +23,6 @@ const localPath: string = `${process.cwd()}/${process.env.FOLDER_LOCAL}` || '';
 consola.info(`FOLDER_LOCAL:${localPath}`);
 
 const affiliateIdsUnique = new Set();
-let checkDuplicateLids: string[] = [];
 
 const sendToAffIdsToSqs = async () => {
   try {
@@ -100,11 +99,6 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
         const timeCurrent: number = new Date().getTime();
         affiliateIdsUnique.add(buffer.affiliate_id);
         lids.push(buffer.lid);
-        if (checkDuplicateLids.includes(buffer.lid)) {
-          consola.info(`Found duplicate lid ${buffer.lid}`);
-          influxdb(200, `duplicate_lid_${buffer.lid}`);
-        }
-        checkDuplicateLids.push(buffer.lid);
         buffer.date_added = Math.floor(timeCurrent / 1000);
         // buffer.event = `${buffer.event}-${computerName}`;
         records += `${JSON.stringify(buffer)}\n`;
@@ -116,7 +110,6 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
       // eslint-disable-next-line no-param-reassign
       Object.keys(aggregationObject).forEach((k) => delete aggregationObject[k]);
       setInitDateTime(null);
-      // @ts-ignore
       const filePath = generateFilePath(localPath) || '';
       const fileFolder = path.dirname(filePath);
       await createRecursiveFolder(fileFolder);
@@ -133,9 +126,3 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
   }
 };
 
-setInterval(() => {
-  if (checkDuplicateLids.length > 5000) {
-    consola.info('Reset checkDuplicateLids array:');
-    checkDuplicateLids = [];
-  }
-}, 20000);
