@@ -36,6 +36,17 @@ export const appendToLocalFile = (filePath: string, data: any) => new Promise((r
   });
 });
 
+export const renameFile = (filePath: string, newPath: string) => new Promise<string>((resolve, reject) => {
+  fs.rename(filePath, newPath, (err) => {
+    if (err) {
+      // consola.error(`deleteFile :`, err)
+      influxdb(500, 'rename_file_error');
+      reject(newPath);
+    }
+    resolve(newPath);
+  });
+});
+
 export const deleteFile = (filePath: string) => new Promise<string>((resolve, reject) => {
   fs.unlink(filePath, (err) => {
     if (err) {
