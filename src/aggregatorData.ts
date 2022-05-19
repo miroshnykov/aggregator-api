@@ -16,6 +16,7 @@ import { copyZipFromS3Redshift, filesToS3 } from './S3Handle';
 import { sendMessageToQueue } from './sqs';
 import { influxdb } from './metrics';
 import { LIMIT_RECORDS, LIMIT_SECONDS } from './constants';
+import { convertHrtime } from './convertHrtime';
 
 const computerName = os.hostname();
 
@@ -23,7 +24,6 @@ const localPath: string = `${process.cwd()}/${process.env.FOLDER_LOCAL}` || '';
 consola.info(`FOLDER_LOCAL:${localPath}`);
 
 const affiliateIdsUnique = new Set();
-let checkDuplicateLids: string[] = [];
 
 const sendToAffIdsToSqs = async () => {
   try {
@@ -92,6 +92,7 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
     )
   ) {
     try {
+      const startTime: bigint = process.hrtime.bigint();
       const lids: Array<string> = [];
       let records = '';
       for (const [key, value] of Object.entries(aggregationObject)) {
@@ -100,11 +101,6 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
         const timeCurrent: number = new Date().getTime();
         affiliateIdsUnique.add(buffer.affiliate_id);
         lids.push(buffer.lid);
-        if (checkDuplicateLids.includes(buffer.lid)) {
-          consola.info(`Found duplicate lid ${buffer.lid}`);
-          influxdb(200, `duplicate_lid_${buffer.lid}`);
-        }
-        checkDuplicateLids.push(buffer.lid);
         buffer.date_added = Math.floor(timeCurrent / 1000);
         // buffer.event = `${buffer.event}-${computerName}`;
         records += `${JSON.stringify(buffer)}\n`;
@@ -116,7 +112,6 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
       // eslint-disable-next-line no-param-reassign
       Object.keys(aggregationObject).forEach((k) => delete aggregationObject[k]);
       setInitDateTime(null);
-      // @ts-ignore
       const filePath = generateFilePath(localPath) || '';
       const fileFolder = path.dirname(filePath);
       await createRecursiveFolder(fileFolder);
@@ -124,7 +119,9 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
       await compressFile(filePath);
       await copyGz(filePath);
       await deleteFile(filePath);
-      consola.success(`DONE FIRST STEP create local gz file:${filePath} computerName:{ ${computerName} }`);
+      const endTime: bigint = process.hrtime.bigint();
+      const diffTime: bigint = endTime - startTime;
+      consola.success(`DONE FIRST STEP time processing: { ${convertHrtime(diffTime)} } ms, create local gz file:${filePath} computerName:{ ${computerName} }`);
       setTimeout(fileGzProcessing, 2000);
     } catch (e) {
       influxdb(500, 'aggregate_data_processing_error');
@@ -132,10 +129,3 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
     }
   }
 };
-
-setInterval(() => {
-  if (checkDuplicateLids.length > 5000) {
-    consola.info('Reset checkDuplicateLids array:');
-    checkDuplicateLids = [];
-  }
-}, 20000);
