@@ -26,14 +26,25 @@ export const createRecursiveFolder = (fileFolder: string) => new Promise<boolean
 });
 
 export const appendToLocalFile = (filePath: string, data: any) => new Promise((resolve, reject) => {
-  // @ts-ignore
-  fs.appendFileSync(filePath, data, (err: any) => {
+  fs.appendFile(filePath, data, (err: any) => {
     if (err) {
       influxdb(500, 'append_to_local_file_error');
+      consola.error(`appendToLocalFileError ${filePath}:`, err);
       reject(err);
     }
+    resolve(filePath);
   });
-  resolve(filePath);
+});
+
+export const renameFile = (filePath: string, newPath: string) => new Promise<string>((resolve, reject) => {
+  fs.rename(filePath, newPath, (err) => {
+    if (err) {
+      // consola.error(`deleteFile :`, err)
+      influxdb(500, 'rename_file_error');
+      reject(newPath);
+    }
+    resolve(newPath);
+  });
 });
 
 export const deleteFile = (filePath: string) => new Promise<string>((resolve, reject) => {

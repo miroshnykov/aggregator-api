@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import zlib from 'node:zlib';
 import path from 'node:path';
 import consola from 'consola';
-import { createRecursiveFolder } from './utils';
+import { createRecursiveFolder, renameFile } from './utils';
 import { influxdb } from './metrics';
 
 export const compressFile = (fileName: string) => new Promise((resolve) => {
@@ -47,7 +47,6 @@ export const copyGz = (filePath: string) => {
   newPath = `${newPath}.gz`;
   return createRecursiveFolder(newFileFolder)
     .then(() => {
-      fs.renameSync(gzPath, newPath);
-      return filePath;
+      renameFile(gzPath, newPath).then(() => filePath);
     });
 };
