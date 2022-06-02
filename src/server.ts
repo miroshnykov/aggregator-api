@@ -13,7 +13,7 @@ import { aggregateDataProcessing } from './aggregatorData';
 import {
   deleteFolder, getHumanDateFormat, getInitDateTime, setInitDateTime,
 } from './utils';
-import { IFolder, unprocessedS3Files } from './S3Handle';
+import { IFolder, processedS3FilesCleanUp, unprocessedS3Files } from './S3Handle';
 import { insertBonusLid, selectLid } from './redshift';
 import { IBonusLidRes } from './Interfaces/traffic';
 import { sendLidDynamoDb } from './dynamoDb';
@@ -251,6 +251,7 @@ setInterval(deleteFolder, 36000000, `${localPath}_gz`); // 36000000 ms ->  10h
 
 setInterval(unprocessedS3Files, 32400000, IFolder.FAILED); // 32400000 ms ->  9h
 setInterval(unprocessedS3Files, 28800000, IFolder.UNPROCESSED); // 28800000 ms ->  8h
+setInterval(processedS3FilesCleanUp, 86400000, IFolder.PROCESSED); // 86400000 ms -> 24h
 
 httpServer.listen(port, host, (): void => {
   consola.success(`Server is running on http://${host}:${port} NODE_ENV:${process.env.NODE_ENV} Using node - { ${process.version} }`);

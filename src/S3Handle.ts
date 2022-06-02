@@ -213,3 +213,45 @@ export const unprocessedS3Files = async (folder: IFolder) => {
     influxdb(500, `unprocessed_s3_files_error_${folder}`);
   }
 };
+
+const toTimeStamp = (strDate: any) => Date.parse(strDate);
+const getHumanDateFormat = (date: any) => date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
+const DAYS_PERIOD: number = 10;
+
+export const processedS3FilesCleanUp = async (folder: IFolder) => {
+  try {
+    const bucket = process.env.S3_BUCKET_NAME || '';
+    const params = {
+      Bucket: bucket,
+      Prefix: `${folder}/`,
+    };
+    const filesPath: string[] = [];
+    const s3Objects = await s3.listObjects(params).promise();
+
+    const date = new Date();
+    date.setDate(date.getDate() - DAYS_PERIOD);
+    consola.log(`S3 files delete that was created before ${getHumanDateFormat(date)}`);
+    let recordTotalCount: number = 0;
+    let deleteRecordCount: number = 0;
+
+    for (const content of s3Objects?.Contents!) {
+      recordTotalCount++;
+      if (date.getTime() > toTimeStamp(content.LastModified)) {
+        filesPath.push(content.Key!);
+      }
+    }
+    for (const filePath of filesPath) {
+      // eslint-disable-next-line no-await-in-loop
+      const resDel = await deleteS3Files(filePath);
+      if (resDel) {
+        deleteRecordCount++;
+        consola.success(` ** delete file { ${filePath} } folder: { ${folder} }  in bucket: { ${bucket} }`);
+        influxdb(200, 'processed_s3_old_files_deleted');
+      }
+    }
+    consola.info(`Total Records { ${recordTotalCount} },  delete Records { ${deleteRecordCount} } `);
+  } catch (e) {
+    consola.error(e);
+    influxdb(500, 'processed_s3_files_clean_up_error');
+  }
+};
