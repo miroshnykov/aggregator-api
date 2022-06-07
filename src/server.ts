@@ -13,11 +13,12 @@ import { aggregateDataProcessing } from './aggregatorData';
 import {
   deleteFolder, getHumanDateFormat, getInitDateTime, setInitDateTime,
 } from './utils';
-import { IFolder, unprocessedS3Files } from './S3Handle';
+import { IFolder, processedS3FilesCleanUp, unprocessedS3Files } from './S3Handle';
 import { insertBonusLid, selectLid } from './redshift';
 import { IBonusLidRes } from './Interfaces/traffic';
 import { sendLidDynamoDb } from './dynamoDb';
 import { ILid } from './Interfaces/lid';
+import { IntervalTime } from './constants/intervalTime';
 
 const app: Application = express();
 const httpServer = createServer(app);
@@ -178,6 +179,26 @@ app.get('/reSendLidToDynamoDb', async (req: Request, res: Response) => {
   }
 });
 
+// http://localhost:9002/processedS3FilesCleanUp?hash=dede
+// https://aggregator.aezai.com/processedS3FilesCleanUp
+app.get('/processedS3FilesCleanUp', (req: Request, res: Response) => {
+  try {
+    if (!req.query.hash || req.query.hash !== process.env.GATEWAY_API_SECRET) {
+      throw Error('broken key');
+    }
+    setTimeout(processedS3FilesCleanUp, 2000, IFolder.PROCESSED);
+    res.json({
+      success: true,
+      info: `added to queue processedS3FilesCleanUp running after 2 seconds folder:{ ${IFolder.PROCESSED} } `,
+    });
+  } catch (e: any) {
+    res.json({
+      success: false,
+      info: e.toString(),
+    });
+  }
+});
+
 app.use(express.json());
 
 const aggregationObject: { [index: string]: any } = {};
@@ -244,13 +265,14 @@ app.post('/lidBonus', async (req: Request, res: Response) => {
   }
 });
 
-setInterval(aggregateDataProcessing, 9000, aggregationObject);
+setInterval(aggregateDataProcessing, IntervalTime.DATA_PROCESSING, aggregationObject);
 
-setInterval(deleteFolder, 36000000, localPath); // 36000000 ms -> 10h
-setInterval(deleteFolder, 36000000, `${localPath}_gz`); // 36000000 ms ->  10h
+setInterval(deleteFolder, IntervalTime.DELETE_FOLDER, localPath);
+setInterval(deleteFolder, IntervalTime.DELETE_FOLDER, `${localPath}_gz`);
 
-setInterval(unprocessedS3Files, 32400000, IFolder.FAILED); // 32400000 ms ->  9h
-setInterval(unprocessedS3Files, 28800000, IFolder.UNPROCESSED); // 28800000 ms ->  8h
+setInterval(unprocessedS3Files, IntervalTime.FAILED_FILES, IFolder.FAILED);
+setInterval(unprocessedS3Files, IntervalTime.UNPROCESSED_FILES, IFolder.UNPROCESSED);
+setInterval(processedS3FilesCleanUp, IntervalTime.CLEAN_UP_PROCESSED_FILES, IFolder.PROCESSED);
 
 httpServer.listen(port, host, (): void => {
   consola.success(`Server is running on http://${host}:${port} NODE_ENV:${process.env.NODE_ENV} Using node - { ${process.version} }`);

@@ -15,8 +15,9 @@ import { compressFile, copyGz } from './zip';
 import { copyZipFromS3Redshift, filesToS3 } from './S3Handle';
 import { sendMessageToQueue } from './sqs';
 import { influxdb } from './metrics';
-import { LIMIT_RECORDS, LIMIT_SECONDS } from './constants';
+import { LIMIT_RECORDS, LIMIT_SECONDS } from './constants/constants';
 import { convertHrtime } from './convertHrtime';
+import { IntervalTime } from './constants/intervalTime';
 
 const computerName = os.hostname();
 
@@ -49,7 +50,7 @@ const sendToAffIdsToSqs = async () => {
   }
 };
 
-setInterval(sendToAffIdsToSqs, 7200000); // 7200000 ms -> 2h  28800000 ms -> 8h  300000 -> 5 MIN FOR TEST
+setInterval(sendToAffIdsToSqs, IntervalTime.SEND_AFFILIATES_IDS_TO_SQS);
 
 const fileGzProcessing = async () => {
   try {
@@ -61,7 +62,7 @@ const fileGzProcessing = async () => {
       return;
     }
     await filesToS3(files);
-    setTimeout(copyZipFromS3Redshift, 2000, files);
+    setTimeout(copyZipFromS3Redshift, IntervalTime.COPY_GZ_S3_TO_REDSHIFT, files);
     // process.nextTick(copyZipFromS3Redshift, files);
     // await copyZipFromS3Redshift(files)
   } catch (e) {
@@ -122,7 +123,7 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
       const endTime: bigint = process.hrtime.bigint();
       const diffTime: bigint = endTime - startTime;
       consola.success(`DONE FIRST STEP time processing: { ${convertHrtime(diffTime)} } ms, create local gz file:${filePath} computerName:{ ${computerName} }`);
-      setTimeout(fileGzProcessing, 2000);
+      setTimeout(fileGzProcessing, IntervalTime.COPY_GZ_TO_S3);
     } catch (e) {
       influxdb(500, 'aggregate_data_processing_error');
       consola.error('error generate zip file:', e);
