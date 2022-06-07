@@ -89,7 +89,7 @@ export const filesToS3 = async (files: string[]) => {
 };
 
 // eslint-disable-next-line consistent-return
-export const copyS3ToRedshift = async (destPath: string) => {
+export const copyS3ToRedshift = async (destPath: string): Promise<boolean> => {
   const client = await pool.connect();
 
   const awsKey = process.env.AWS_ACCESS_KEY_ID;

@@ -62,7 +62,7 @@ const fileGzProcessing = async () => {
       return;
     }
     await filesToS3(files);
-    setTimeout(copyZipFromS3Redshift, IntervalTime.COPY_ZIP_S3_TO_REDSHIFT, files);
+    setTimeout(copyZipFromS3Redshift, IntervalTime.COPY_GZ_S3_TO_REDSHIFT, files);
     // process.nextTick(copyZipFromS3Redshift, files);
     // await copyZipFromS3Redshift(files)
   } catch (e) {
@@ -123,7 +123,7 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
       const endTime: bigint = process.hrtime.bigint();
       const diffTime: bigint = endTime - startTime;
       consola.success(`DONE FIRST STEP time processing: { ${convertHrtime(diffTime)} } ms, create local gz file:${filePath} computerName:{ ${computerName} }`);
-      setTimeout(fileGzProcessing, IntervalTime.CREATE_GZ_FILE);
+      setTimeout(fileGzProcessing, IntervalTime.COPY_GZ_TO_S3);
     } catch (e) {
       influxdb(500, 'aggregate_data_processing_error');
       consola.error('error generate zip file:', e);
