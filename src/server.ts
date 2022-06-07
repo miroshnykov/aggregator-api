@@ -179,6 +179,26 @@ app.get('/reSendLidToDynamoDb', async (req: Request, res: Response) => {
   }
 });
 
+// http://localhost:9002/processedS3FilesCleanUp?hash=dede
+// https://aggregator.aezai.com/processedS3FilesCleanUp
+app.get('/processedS3FilesCleanUp', (req: Request, res: Response) => {
+  try {
+    if (!req.query.hash || req.query.hash !== process.env.GATEWAY_API_SECRET) {
+      throw Error('broken key');
+    }
+    setTimeout(processedS3FilesCleanUp, 2000, IFolder.PROCESSED);
+    res.json({
+      success: true,
+      info: `added to queue processedS3FilesCleanUp running after 2 seconds folder:{ ${IFolder.PROCESSED} } `,
+    });
+  } catch (e: any) {
+    res.json({
+      success: false,
+      info: e.toString(),
+    });
+  }
+});
+
 app.use(express.json());
 
 const aggregationObject: { [index: string]: any } = {};

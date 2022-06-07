@@ -11,6 +11,7 @@ import { pool } from './redshift';
 import { deleteFile } from './utils';
 import { influxdb } from './metrics';
 import { convertHrtime } from './convertHrtime';
+import { DAYS_PERIOD } from './constants/constants';
 
 const computerName = os.hostname();
 
@@ -216,7 +217,6 @@ export const unprocessedS3Files = async (folder: IFolder) => {
 
 const toTimeStamp = (strDate: any) => Date.parse(strDate);
 const getHumanDateFormat = (date: any) => date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
-const DAYS_PERIOD: number = 10;
 
 export const processedS3FilesCleanUp = async (folder: IFolder) => {
   try {
@@ -236,7 +236,7 @@ export const processedS3FilesCleanUp = async (folder: IFolder) => {
 
     for (const content of s3Objects?.Contents!) {
       recordTotalCount++;
-      if (date.getTime() > toTimeStamp(content.LastModified)) {
+      if (date.getTime() > toTimeStamp(content.LastModified) && recordTotalCount < 1000) {
         filesPath.push(content.Key!);
       }
     }
@@ -249,7 +249,7 @@ export const processedS3FilesCleanUp = async (folder: IFolder) => {
         influxdb(200, 'processed_s3_old_files_deleted');
       }
     }
-    consola.info(`Total Records { ${recordTotalCount} },  delete Records { ${deleteRecordCount} } `);
+    consola.info(`Total Records { ${recordTotalCount} }, ready to delete Records { ${filesPath.length} } delete Records { ${deleteRecordCount} } `);
   } catch (e) {
     consola.error(e);
     influxdb(500, 'processed_s3_files_clean_up_error');
