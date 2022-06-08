@@ -236,7 +236,7 @@ export const processedS3FilesCleanUp = async (folder: IFolder) => {
 
     for (const content of s3Objects?.Contents!) {
       recordTotalCount++;
-      if (date.getTime() > toTimeStamp(content.LastModified) && recordTotalCount < 5000) {
+      if (date.getTime() > toTimeStamp(content.LastModified) && recordTotalCount < 500) {
         filesPath.push(content.Key!);
       }
     }
