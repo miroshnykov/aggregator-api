@@ -272,7 +272,7 @@ setInterval(deleteFolder, IntervalTime.DELETE_FOLDER, `${localPath}_gz`);
 
 setInterval(unprocessedS3Files, IntervalTime.FAILED_FILES, IFolder.FAILED);
 setInterval(unprocessedS3Files, IntervalTime.UNPROCESSED_FILES, IFolder.UNPROCESSED);
-setInterval(processedS3FilesCleanUp, IntervalTime.CLEAN_UP_PROCESSED_FILES, IFolder.PROCESSED);
+// setInterval(processedS3FilesCleanUp, IntervalTime.CLEAN_UP_PROCESSED_FILES, IFolder.PROCESSED);
 
 httpServer.listen(port, host, (): void => {
   consola.success(`Server is running on http://${host}:${port} NODE_ENV:${process.env.NODE_ENV} Using node - { ${process.version} }`);
