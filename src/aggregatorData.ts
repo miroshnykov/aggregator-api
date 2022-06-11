@@ -12,7 +12,7 @@ import {
   setInitDateTime,
 } from './utils';
 import { compressFile, copyGz } from './zip';
-import { copyZipFromS3Redshift, filesToS3 } from './S3Handle';
+import { copyGzFromS3Redshift, filesToS3 } from './S3Handle';
 import { sendMessageToQueue } from './sqs';
 import { influxdb } from './metrics';
 import { LIMIT_RECORDS, LIMIT_SECONDS } from './constants/constants';
@@ -52,22 +52,21 @@ const sendToAffIdsToSqs = async () => {
 
 setInterval(sendToAffIdsToSqs, IntervalTime.SEND_AFFILIATES_IDS_TO_SQS);
 
-const fileGzProcessing = async () => {
+const filesGzToS3 = async (): Promise<string[]> => {
   try {
     const localFolder: string = `${process.env.FOLDER_LOCAL}_gz` || '';
     const files = await getLocalFiles(localFolder);
     // consola.info(`gz files:${JSON.stringify(files)}`)
     if (files.length === 0) {
-      consola.info('no zip files at:', localFolder);
-      return;
+      consola.info(` * FilesGzToS3 *  no zip files at: ${localFolder}`);
+      return [];
     }
     await filesToS3(files);
-    setTimeout(copyZipFromS3Redshift, IntervalTime.COPY_GZ_S3_TO_REDSHIFT, files);
-    // process.nextTick(copyZipFromS3Redshift, files);
-    // await copyZipFromS3Redshift(files)
+    return files;
   } catch (e) {
     influxdb(500, 'file_gz_processing_error');
     consola.error('fileGzProcessingError:', e);
+    return [];
   }
 };
 
@@ -76,7 +75,7 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
 
   const countRecords: number = Object.keys(aggregationObject).length;
   const secondLeft = currentTime - getInitDateTime()!;
-  if (countRecords >= 1 && secondLeft > 50) {
+  if (countRecords >= 1 && secondLeft > LIMIT_SECONDS) {
     consola.info(`Records:${countRecords} LIMIT_RECORDS:${LIMIT_RECORDS},  seconds have passed:${secondLeft}, LIMIT_SECONDS:${LIMIT_SECONDS}, computerName:{ ${computerName} }`);
   }
 
@@ -123,7 +122,8 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
       const endTime: bigint = process.hrtime.bigint();
       const diffTime: bigint = endTime - startTime;
       consola.success(`DONE FIRST STEP time processing: { ${convertHrtime(diffTime)} } ms, create local gz file:${filePath} computerName:{ ${computerName} }`);
-      setTimeout(fileGzProcessing, IntervalTime.COPY_GZ_TO_S3);
+      const files: string[] = await filesGzToS3();
+      await copyGzFromS3Redshift(files!);
     } catch (e) {
       influxdb(500, 'aggregate_data_processing_error');
       consola.error('error generate zip file:', e);

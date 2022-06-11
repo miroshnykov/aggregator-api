@@ -67,22 +67,19 @@ const uploadFileToS3Bucket = async (file: string) => {
   }
 };
 
-export const filesToS3 = async (files: string[]) => {
+export const filesToS3 = async (files: string[]): Promise<void> => {
   try {
     const startTime: bigint = process.hrtime.bigint();
-    for (const file of files) {
-      // consola.info('file:', file)
-      // eslint-disable-next-line no-await-in-loop
+    await Promise.all(files.map(async (file: string) => {
       const successUpload = await uploadFileToS3Bucket(file);
+
       if (successUpload) {
-        // consola.info('deleteFile:', file)
-        // eslint-disable-next-line no-await-in-loop
+        const endTime: bigint = process.hrtime.bigint();
+        const diffTime: bigint = endTime - startTime;
+        consola.success(`DONE SECOND STEP { filesToS3 } time { ${convertHrtime(diffTime)} } ms, send gz to s3:${JSON.stringify(files)} computerName:{ ${computerName} }`);
         await deleteFile(file);
       }
-    }
-    const endTime: bigint = process.hrtime.bigint();
-    const diffTime: bigint = endTime - startTime;
-    consola.success(`DONE SECOND STEP { filesToS3 } time { ${convertHrtime(diffTime)} } ms, send gz to s3:${JSON.stringify(files)} computerName:{ ${computerName} }`);
+    }));
   } catch (e) {
     influxdb(500, 'files_to_s3_error');
     consola.error('s3Handle:', e);
@@ -154,35 +151,23 @@ export const deleteS3Files = async (destPath: string) => new Promise<boolean>((r
   });
 });
 
-export const copyZipFromS3Redshift = async (files: string[]) => {
+export const copyGzFromS3Redshift = async (files: string[]) => {
   try {
     const startTime: bigint = process.hrtime.bigint();
     const filesDestPath: string[] = [];
-    for (const file of files) {
+    await Promise.all(files.map(async (file: string) => {
       const destPath = `unprocessed/${computerName}/co-offers/${file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)}`;
       filesDestPath.push(destPath!);
-      // eslint-disable-next-line no-await-in-loop
       const copyS3ToRedshiftResponse: boolean = await copyS3ToRedshift(destPath);
-      if (copyS3ToRedshiftResponse) {
-        // eslint-disable-next-line no-await-in-loop
-        await copyS3Files(file, IFolder.PROCESSED);
-      } else {
-        consola.error(`Copy s3 Files to folder ${IFolder.FAILED} file:${file}`);
-        influxdb(500, 'copy_s3_files_to_failed_folder');
-        // eslint-disable-next-line no-await-in-loop
-        await copyS3Files(file, IFolder.FAILED);
-      }
-
-      // eslint-disable-next-line no-await-in-loop
+      await copyS3Files(file, copyS3ToRedshiftResponse ? IFolder.PROCESSED : IFolder.FAILED);
       await deleteS3Files(destPath);
-    }
-    const endTime: bigint = process.hrtime.bigint();
-    const diffTime: bigint = endTime - startTime;
-    // consola.info(`Finish copy file to redshift time processing: { ${convertHrtime(diffTime)} } ms`);
-    consola.success(`DONE THIRD STEP { copyZipFromS3Redshift } time: { ${convertHrtime(diffTime)} } ms, copy file to s3 folder-${IFolder.PROCESSED}, deleted files:${JSON.stringify(filesDestPath)} computerName:{ ${computerName} }\n`);
+      const endTime: bigint = process.hrtime.bigint();
+      const diffTime: bigint = endTime - startTime;
+      consola.success(`DONE THIRD STEP status { ${copyS3ToRedshiftResponse ? IFolder.PROCESSED : IFolder.FAILED} } { copyGzFromS3Redshift } time: { ${convertHrtime(diffTime)} } ms, copy file to s3 folder-${copyS3ToRedshiftResponse ? IFolder.PROCESSED : IFolder.FAILED}, deleted files:${JSON.stringify(filesDestPath)} computerName:{ ${computerName} }\n`);
+    }));
   } catch (e) {
     influxdb(500, 'copy_zip_from_s3_redshift_error');
-    consola.error('copyZipFromS3RedshiftError:', e);
+    consola.error('copyGzFromS3RedshiftError:', e);
   }
 };
 
@@ -199,16 +184,18 @@ export const unprocessedS3Files = async (folder: IFolder) => {
       filesPath.push(content.Key!);
     }
 
-    for (const filePath of filesPath) {
-      // eslint-disable-next-line no-await-in-loop
+    if (filesPath.length === 0) {
+      consola.warn(`Cron ** unprocessedS3Files **  There is no files on s3 folder:{ ${folder} }`);
+      return;
+    }
+    await Promise.all(filesPath.map(async (filePath: string) => {
       const copyS3ToRedshiftResponse: boolean = await copyS3ToRedshift(filePath);
       if (copyS3ToRedshiftResponse) {
-        // eslint-disable-next-line no-await-in-loop
         await deleteS3Files(filePath);
         consola.warn(` ** unprocessedS3Files ** folder: { ${folder} }  in bucket: { ${bucket} } reSend to redshift files:`, filePath);
         influxdb(200, `unprocessed_s3_files_${folder}_send_success`);
       }
-    }
+    }));
   } catch (e) {
     consola.error(e);
     influxdb(500, `unprocessed_s3_files_error_${folder}`);
