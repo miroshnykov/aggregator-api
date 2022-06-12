@@ -69,8 +69,8 @@ const uploadFileToS3Bucket = async (file: string) => {
 
 export const filesToS3 = async (files: string[]): Promise<void> => {
   try {
-    const startTime: bigint = process.hrtime.bigint();
     await Promise.all(files.map(async (file: string) => {
+      const startTime: bigint = process.hrtime.bigint();
       const successUpload = await uploadFileToS3Bucket(file);
 
       if (successUpload) {
