@@ -196,7 +196,7 @@ export const reCopyS3ToRedshift = async (folder: IFolder) => {
       if (copyS3ToRedshiftResponse) {
         await deleteS3Files(filePath);
         consola.warn(` ** reCopyS3ToRedshift ** folder: { ${folder} }  in bucket: { ${bucket} } reSend to redshift files:`, filePath);
-        influxdb(200, `unprocessed_s3_files_${folder}_send_success`);
+        influxdb(200, `re_copy_s3_files_${folder}_send_success`);
       }
     } catch (e) {
       consola.error('reCopyS3ToRedshiftError:', e);
