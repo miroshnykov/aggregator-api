@@ -193,12 +193,13 @@ export const unprocessedS3Files = async (folder: IFolder) => {
       Bucket: bucket,
       Prefix: `${folder}/`,
     };
+    consola.info(`start ${folder}S3Files ${JSON.stringify(params)}`);
     const filesPath: string[] = [];
     const s3Objects = await s3.listObjects(params).promise();
     for (const content of s3Objects?.Contents!) {
       filesPath.push(content.Key!);
     }
-
+    consola.info(`${folder}S3Files count ${filesPath.length}`);
     for (const filePath of filesPath) {
       // eslint-disable-next-line no-await-in-loop
       const copyS3ToRedshiftResponse: boolean = await copyS3ToRedshift(filePath);
