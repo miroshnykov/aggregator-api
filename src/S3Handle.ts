@@ -193,23 +193,24 @@ export const unprocessedS3Files = async (folder: IFolder) => {
       Bucket: bucket,
       Prefix: `${folder}/`,
     };
-    consola.info(`start ${folder}S3Files ${JSON.stringify(params)}`);
     const filesPath: string[] = [];
     const s3Objects = await s3.listObjects(params).promise();
     for (const content of s3Objects?.Contents!) {
       filesPath.push(content.Key!);
     }
-    consola.info(`${folder}S3Files count ${filesPath.length}`);
+    let successCopy = 0;
     for (const filePath of filesPath) {
       // eslint-disable-next-line no-await-in-loop
       const copyS3ToRedshiftResponse: boolean = await copyS3ToRedshift(filePath);
       if (copyS3ToRedshiftResponse) {
         // eslint-disable-next-line no-await-in-loop
         await deleteS3Files(filePath);
+        successCopy++;
         consola.warn(` ** unprocessedS3Files ** folder: { ${folder} }  in bucket: { ${bucket} } reSend to redshift files:`, filePath);
         influxdb(200, `unprocessed_s3_files_${folder}_send_success`);
       }
     }
+    consola.info(`Re-Copy files to s3 count ${filesPath.length}  success copy ${successCopy}`);
   } catch (e) {
     consola.error(e);
     influxdb(500, `unprocessed_s3_files_error_${folder}`);
