@@ -12,6 +12,7 @@ import { deleteFile } from './utils';
 import { influxdb } from './metrics';
 import { convertHrtime } from './convertHrtime';
 import { DAYS_PERIOD } from './constants/constants';
+import { LIMIT_NORMAL_SPEED } from './constants/redshift';
 
 const computerName = os.hostname();
 
@@ -178,8 +179,12 @@ export const copyZipFromS3Redshift = async (files: string[]) => {
     }
     const endTime: bigint = process.hrtime.bigint();
     const diffTime: bigint = endTime - startTime;
-    // consola.info(`Finish copy file to redshift time processing: { ${convertHrtime(diffTime)} } ms`);
-    consola.success(`DONE THIRD STEP { copyZipFromS3Redshift } time: { ${convertHrtime(diffTime)} } ms, copy file to s3 folder-${IFolder.PROCESSED}, deleted files:${JSON.stringify(filesDestPath)} computerName:{ ${computerName} }\n`);
+    const timeSpeed = convertHrtime(diffTime);
+    // consola.info(`Finish copy file to redshift time processing: { ${timeSpeed} } ms`);
+    if (timeSpeed > LIMIT_NORMAL_SPEED) {
+      influxdb(500, 'copy_to_redshift_slow');
+    }
+    consola.success(`DONE THIRD STEP { copyZipFromS3Redshift } time: { ${timeSpeed} } ms, copy file to s3 folder-${IFolder.PROCESSED}, deleted files:${JSON.stringify(filesDestPath)} computerName:{ ${computerName} }\n`);
   } catch (e) {
     influxdb(500, 'copy_zip_from_s3_redshift_error');
     consola.error('copyZipFromS3RedshiftError:', e);
