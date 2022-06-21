@@ -12,6 +12,7 @@ import { deleteFile } from './utils';
 import { influxdb } from './metrics';
 import { convertHrtime } from './convertHrtime';
 import { DAYS_PERIOD } from './constants/constants';
+import { LIMIT_NORMAL_SPEED } from './constants/redshift';
 
 const computerName = os.hostname();
 
@@ -178,8 +179,12 @@ export const copyZipFromS3Redshift = async (files: string[]) => {
     }
     const endTime: bigint = process.hrtime.bigint();
     const diffTime: bigint = endTime - startTime;
-    // consola.info(`Finish copy file to redshift time processing: { ${convertHrtime(diffTime)} } ms`);
-    consola.success(`DONE THIRD STEP { copyZipFromS3Redshift } time: { ${convertHrtime(diffTime)} } ms, copy file to s3 folder-${IFolder.PROCESSED}, deleted files:${JSON.stringify(filesDestPath)} computerName:{ ${computerName} }\n`);
+    const timeSpeed = convertHrtime(diffTime);
+    // consola.info(`Finish copy file to redshift time processing: { ${timeSpeed} } ms`);
+    if (timeSpeed > LIMIT_NORMAL_SPEED) {
+      influxdb(500, 'copy_to_redshift_slow');
+    }
+    consola.success(`DONE THIRD STEP { copyZipFromS3Redshift } time: { ${timeSpeed} } ms, copy file to s3 folder-${IFolder.PROCESSED}, deleted files:${JSON.stringify(filesDestPath)} computerName:{ ${computerName} }\n`);
   } catch (e) {
     influxdb(500, 'copy_zip_from_s3_redshift_error');
     consola.error('copyZipFromS3RedshiftError:', e);
@@ -198,17 +203,19 @@ export const unprocessedS3Files = async (folder: IFolder) => {
     for (const content of s3Objects?.Contents!) {
       filesPath.push(content.Key!);
     }
-
+    let successCopy = 0;
     for (const filePath of filesPath) {
       // eslint-disable-next-line no-await-in-loop
       const copyS3ToRedshiftResponse: boolean = await copyS3ToRedshift(filePath);
       if (copyS3ToRedshiftResponse) {
         // eslint-disable-next-line no-await-in-loop
         await deleteS3Files(filePath);
+        successCopy++;
         consola.warn(` ** unprocessedS3Files ** folder: { ${folder} }  in bucket: { ${bucket} } reSend to redshift files:`, filePath);
         influxdb(200, `unprocessed_s3_files_${folder}_send_success`);
       }
     }
+    consola.info(`Re-Copy files to s3 count ${filesPath.length}  success copy ${successCopy}`);
   } catch (e) {
     consola.error(e);
     influxdb(500, `unprocessed_s3_files_error_${folder}`);
