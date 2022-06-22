@@ -6,5 +6,5 @@ export enum IntervalTime {
   DATA_PROCESSING = 9000, // 9000 ms -> 9s
   COPY_GZ_S3_TO_REDSHIFT = 2000, // 2000 ms -> 2c
   COPY_GZ_TO_S3 = 2000, // 2000 ms -> 2c
-  SEND_AFFILIATES_IDS_TO_SQS = 7200000, // 7200000 ms -> 2h
+  SEND_AFFILIATES_IDS_TO_SQS = 9000000, // 9000000 ms -> 2.5h
 }
