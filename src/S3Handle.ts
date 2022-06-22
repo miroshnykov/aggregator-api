@@ -192,10 +192,12 @@ export const reCopyS3ToRedshift = async (folder: IFolder) => {
     consola.warn(`Cron ** reCopyS3ToRedshift **  There is no files on s3 folder:{ ${folder} }`);
     return;
   }
+  let countSuccess = 0;
   await Promise.all(filesPath.map(async (filePath: string) => {
     try {
       const copyS3ToRedshiftResponse: boolean = await copyS3ToRedshift(filePath);
       if (copyS3ToRedshiftResponse) {
+        countSuccess++;
         await deleteS3Files(filePath);
         consola.warn(` ** reCopyS3ToRedshift ** folder: { ${folder} }  in bucket: { ${bucket} } reSend to redshift files:`, filePath);
         influxdb(200, `re_copy_s3_files_${folder}_send_success`);
@@ -205,6 +207,7 @@ export const reCopyS3ToRedshift = async (folder: IFolder) => {
       influxdb(500, `re_copy_s3_files_error_${folder}`);
     }
   }));
+  consola.info(`ReCopyS3ToRedshift folder { ${folder} }.  Total files { ${filesPath.length} } success send files { ${countSuccess} }`);
 };
 
 // const toTimeStamp = (strDate: any) => Date.parse(strDate);

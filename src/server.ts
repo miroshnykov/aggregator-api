@@ -34,6 +34,7 @@ app.get('/health', (req: Request, res: Response) => {
   res.json('Ok');
 });
 
+// http://localhost:9002/reUploadToRedshift?hash=
 // https://aggregator.aezai.com/reUploadToRedshift
 // https://aggregator.stage.aezai.com/reUploadToRedshift
 app.get('/reUploadToRedshift', (req: Request, res: Response) => {
