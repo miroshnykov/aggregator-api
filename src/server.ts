@@ -279,3 +279,14 @@ httpServer.listen(port, host, (): void => {
   consola.success(`Server is running on http://${host}:${port} NODE_ENV:${process.env.NODE_ENV} Using node - { ${process.version} }`);
   consola.info(`S3_BUCKET_NAME:${process.env.S3_BUCKET_NAME}, AWS_ACCESS_KEY_ID:${process.env.AWS_ACCESS_KEY_ID}`);
 });
+
+process
+  .on('unhandledRejection', (reason, p) => {
+    consola.error(reason, 'Unhandled Rejection at Promise', p);
+    influxdb(500, 'unhandledRejection');
+  })
+  .on('uncaughtException', (err: Error) => {
+    consola.error(err, 'Uncaught Exception thrown');
+    influxdb(500, 'uncaughtException');
+    process.exit(1);
+  });
