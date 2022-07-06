@@ -214,7 +214,7 @@ app.post('/offer', async (req: Request, res: Response) => {
     if (!getInitDateTime()) {
       const currentTime: number = Math.floor((new Date().getTime()) / 1000);
       const currentDateHuman = new Date(currentTime * 1000);
-      consola.info(`\nSetup setInitDateTime:${getHumanDateFormat(currentDateHuman)}, computerName:{ ${computerName} }`);
+      consola.info(`[INIT_DATA_TIME] Setup setInitDateTime:${getHumanDateFormat(currentDateHuman)}, computerName:{ ${computerName} }`);
       setInitDateTime(currentTime);
     }
 

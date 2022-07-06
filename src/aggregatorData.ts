@@ -58,7 +58,7 @@ const filesGzToS3 = async (): Promise<string[]> => {
     const files = await getLocalFiles(localFolder);
     // consola.info(`gz files:${JSON.stringify(files)}`)
     if (files.length === 0) {
-      consola.info(` * FilesGzToS3 *  no zip files at: ${localFolder}`);
+      consola.info(`[SECOND_STEP_FILES_TO_S3_NO_FILES] FilesGzToS3 no zip files at: ${localFolder}`);
       return [];
     }
     await filesToS3(files);
@@ -76,7 +76,7 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
   const countRecords: number = Object.keys(aggregationObject).length;
   const secondLeft = currentTime - getInitDateTime()!;
   if (countRecords >= 1 && secondLeft > LIMIT_SECONDS) {
-    consola.info(`Records:${countRecords} LIMIT_RECORDS:${LIMIT_RECORDS},  seconds have passed:${secondLeft}, LIMIT_SECONDS:${LIMIT_SECONDS}, computerName:{ ${computerName} }`);
+    consola.info(`[INIT_PROCESSING] Records:${countRecords} LIMIT_RECORDS:${LIMIT_RECORDS},  seconds have passed:${secondLeft}, LIMIT_SECONDS:${LIMIT_SECONDS}, computerName:{ ${computerName} }`);
   }
 
   // if (secondLeft >= LIMIT_SECONDS
@@ -106,7 +106,7 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
         records += `${JSON.stringify(buffer)}\n`;
       }
       const recordsReady = records.slice(0, -1);
-      consola.info(`Lids count: { ${lids.length} }. Lids list:${lids}, computerName:{ ${computerName} }`);
+      consola.info(`[FIRST_STEP_LIDS_COUNT] Lids count: { ${lids.length} }. Lids list:${lids}, computerName:{ ${computerName} }`);
       // influxdb(200, `lids_pool_${computerName}_count_${lids.length}`)
       // @ts-ignore
       // eslint-disable-next-line no-param-reassign
@@ -121,7 +121,7 @@ export const aggregateDataProcessing = async (aggregationObject: object) => {
       await deleteFile(filePath);
       const endTime: bigint = process.hrtime.bigint();
       const diffTime: bigint = endTime - startTime;
-      consola.success(`DONE FIRST STEP time processing: { ${convertHrtime(diffTime)} } ms, create local gz file:${filePath} computerName:{ ${computerName} }`);
+      consola.success(`[FIRST_STEP_CREATE_FILE_SUCCESS] time processing: { ${convertHrtime(diffTime)} } ms, create local gz file:${filePath} computerName:{ ${computerName} }`);
       const files: string[] = await filesGzToS3();
       await copyGzFromS3Redshift(files!);
     } catch (e) {

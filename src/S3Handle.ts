@@ -59,7 +59,7 @@ const uploadFileToS3Bucket = async (file: string): Promise<boolean | undefined> 
             consola.error('uploadFileToS3Bucket upload file to s3 err:', err);
             reject();
           }
-          consola.info(`File uploaded successfully at S3 ${data.Location}`);
+          consola.info(`[SECOND_STEP_FILES_TO_S3] File uploaded successfully at S3 ${data.Location}`);
           influxdb(200, `copy_gz_file_to_s3_success_${computerName}`);
           resolve(true);
         });
@@ -80,7 +80,7 @@ export const filesToS3 = async (files: string[]): Promise<void> => {
       if (successUpload) {
         const endTime: bigint = process.hrtime.bigint();
         const diffTime: bigint = endTime - startTime;
-        consola.success(`DONE SECOND STEP { filesToS3 } time { ${convertHrtime(diffTime)} } ms, send gz to s3:${JSON.stringify(files)} computerName:{ ${computerName} }`);
+        consola.success(`[SECOND_STEP_FILES_TO_S3_SUCCESS] filesToS3 time { ${convertHrtime(diffTime)} } ms, send gz to s3:${JSON.stringify(files)} computerName:{ ${computerName} }`);
         await deleteFile(file);
       }
     } catch (e) {
@@ -103,7 +103,7 @@ export const copyS3ToRedshift = async (destPath: string): Promise<boolean> => {
   // consola.info('queryCopy:', queryCopy);
   try {
     await client.query(queryCopy);
-    consola.info(`File ${destPath} added to redshift successfully`);
+    consola.info(`[THIRD_STEP_COPY_TO_REDSHIFT] File ${destPath} added to redshift successfully`);
     influxdb(200, `copy_file_s3_to_redshift_success_${computerName}`);
     client.release();
     return true;
@@ -172,7 +172,15 @@ export const copyGzFromS3Redshift = async (files: string[]) => {
     await deleteS3Files(destPath);
     const endTime: bigint = process.hrtime.bigint();
     const diffTime: bigint = endTime - startTime;
-    consola.success(`DONE THIRD STEP status { ${copyS3ToRedshiftResponse ? IFolder.PROCESSED : IFolder.FAILED} } { copyGzFromS3Redshift } time: { ${convertHrtime(diffTime)} } ms, copy file to s3 folder-${copyS3ToRedshiftResponse ? IFolder.PROCESSED : IFolder.FAILED}, deleted files:${JSON.stringify(filesDestPath)} computerName:{ ${computerName} }\n`);
+    const timeSpeed = convertHrtime(diffTime);
+    if (timeSpeed > LIMIT_NORMAL_SPEED) {
+      influxdb(500, 'copy_to_redshift_slow');
+    }
+    if (copyS3ToRedshiftResponse) {
+      consola.success(`[THIRD_STEP_COPY_TO_REDSHIFT_SUCCESS] copy to ${IFolder.PROCESSED} folder time: { ${timeSpeed} } ms, deleted files:${JSON.stringify(filesDestPath)} computerName:{ ${computerName} }`);
+    } else {
+      consola.error(`[THIRD_STEP_COPY_TO_REDSHIFT_ERROR] copy to ${IFolder.FAILED} s3 folder time: { ${timeSpeed} } ms, deleted files:${JSON.stringify(filesDestPath)} computerName:{ ${computerName} }`);
+    }
   }));
 };
 
