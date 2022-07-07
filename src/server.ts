@@ -34,10 +34,10 @@ app.get('/health', (req: Request, res: Response) => {
   res.json('Ok');
 });
 
-// http://localhost:9002/reUploadToRedshift?hash=
-// https://aggregator.aezai.com/reUploadToRedshift
-// https://aggregator.stage.aezai.com/reUploadToRedshift
-app.get('/reUploadToRedshift', (req: Request, res: Response) => {
+// http://localhost:9002/reCopyS3ToRedshiftUnprocessedFiles?hash=xod9CM1ZV64gQR6U1bH3
+// https://aggregator.aezai.com/reCopyS3ToRedshiftUnprocessedFiles
+// https://aggregator.stage.aezai.com/reCopyS3ToRedshiftUnprocessedFiles
+app.post('/reCopyS3ToRedshiftUnprocessedFiles', (req: Request, res: Response) => {
   try {
     if (!req.query.hash || req.query.hash !== process.env.GATEWAY_API_SECRET) {
       throw Error('broken key');
@@ -45,7 +45,7 @@ app.get('/reUploadToRedshift', (req: Request, res: Response) => {
     setTimeout(reCopyS3ToRedshift, 2000, IFolder.UNPROCESSED);
     res.json({
       success: true,
-      info: `added to queue  running after 2 seconds folder:{ ${IFolder.UNPROCESSED} }`,
+      // info: `added to queue  running after 2 seconds folder:{ ${IFolder.UNPROCESSED} }`,
     });
   } catch (e: any) {
     res.json({
@@ -55,16 +55,18 @@ app.get('/reUploadToRedshift', (req: Request, res: Response) => {
   }
 });
 
-// https://aggregator.aezai.com/reUploadToRedshiftFailed
-app.get('/reUploadToRedshiftFailed', (req: Request, res: Response) => {
+// https://aggregator.aezai.com/reCopyS3ToRedshiftFailedFiles
+app.post('/reCopyS3ToRedshiftFailedFiles', (req: Request, res: Response) => {
   try {
-    if (!req.query.hash || req.query.hash !== process.env.GATEWAY_API_SECRET) {
+    console.info('req:', req.headers);
+    const auth: string = req.headers.authorization || '';
+    if (auth !== process.env.GATEWAY_API_SECRET) {
       throw Error('broken key');
     }
     setTimeout(reCopyS3ToRedshift, 2000, IFolder.FAILED);
     res.json({
       success: true,
-      info: `added to queue running after 2 seconds folder:{ ${IFolder.FAILED} } `,
+      // info: `added to queue running after 2 seconds folder:{ ${IFolder.FAILED} } `,
     });
   } catch (e: any) {
     res.json({
@@ -271,8 +273,8 @@ setInterval(aggregateDataProcessing, IntervalTime.DATA_PROCESSING, aggregationOb
 setInterval(deleteFolder, IntervalTime.DELETE_FOLDER, localPath);
 setInterval(deleteFolder, IntervalTime.DELETE_FOLDER, `${localPath}_gz`);
 
-setInterval(reCopyS3ToRedshift, IntervalTime.FAILED_FILES, IFolder.FAILED);
-setInterval(reCopyS3ToRedshift, IntervalTime.UNPROCESSED_FILES, IFolder.UNPROCESSED);
+// setInterval(reCopyS3ToRedshift, IntervalTime.FAILED_FILES, IFolder.FAILED);
+// setInterval(reCopyS3ToRedshift, IntervalTime.UNPROCESSED_FILES, IFolder.UNPROCESSED);
 // setInterval(processedS3FilesCleanUp, IntervalTime.CLEAN_UP_PROCESSED_FILES, IFolder.PROCESSED);
 
 httpServer.listen(port, host, (): void => {
