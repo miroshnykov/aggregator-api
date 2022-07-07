@@ -34,7 +34,7 @@ app.get('/health', (req: Request, res: Response) => {
   res.json('Ok');
 });
 
-// http://localhost:9002/reCopyS3ToRedshiftUnprocessedFiles?hash=xod9CM1ZV64gQR6U1bH3
+// http://localhost:9002/reCopyS3ToRedshiftUnprocessedFiles?hash=
 // https://aggregator.aezai.com/reCopyS3ToRedshiftUnprocessedFiles
 // https://aggregator.stage.aezai.com/reCopyS3ToRedshiftUnprocessedFiles
 app.post('/reCopyS3ToRedshiftUnprocessedFiles', (req: Request, res: Response) => {
@@ -273,8 +273,8 @@ setInterval(aggregateDataProcessing, IntervalTime.DATA_PROCESSING, aggregationOb
 setInterval(deleteFolder, IntervalTime.DELETE_FOLDER, localPath);
 setInterval(deleteFolder, IntervalTime.DELETE_FOLDER, `${localPath}_gz`);
 
-// setInterval(reCopyS3ToRedshift, IntervalTime.FAILED_FILES, IFolder.FAILED);
-// setInterval(reCopyS3ToRedshift, IntervalTime.UNPROCESSED_FILES, IFolder.UNPROCESSED);
+setInterval(reCopyS3ToRedshift, IntervalTime.FAILED_FILES, IFolder.FAILED);
+setInterval(reCopyS3ToRedshift, IntervalTime.UNPROCESSED_FILES, IFolder.UNPROCESSED);
 // setInterval(processedS3FilesCleanUp, IntervalTime.CLEAN_UP_PROCESSED_FILES, IFolder.PROCESSED);
 
 httpServer.listen(port, host, (): void => {
