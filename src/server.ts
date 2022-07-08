@@ -39,7 +39,8 @@ app.get('/health', (req: Request, res: Response) => {
 // https://aggregator.stage.aezai.com/reCopyS3ToRedshiftUnprocessedFiles
 app.post('/reCopyS3ToRedshiftUnprocessedFiles', (req: Request, res: Response) => {
   try {
-    if (!req.query.hash || req.query.hash !== process.env.GATEWAY_API_SECRET) {
+    const auth: string = req.headers.authorization || '';
+    if (auth !== process.env.GATEWAY_API_SECRET) {
       throw Error('broken key');
     }
     setTimeout(reCopyS3ToRedshift, 2000, IFolder.UNPROCESSED);
@@ -58,7 +59,6 @@ app.post('/reCopyS3ToRedshiftUnprocessedFiles', (req: Request, res: Response) =>
 // https://aggregator.aezai.com/reCopyS3ToRedshiftFailedFiles
 app.post('/reCopyS3ToRedshiftFailedFiles', (req: Request, res: Response) => {
   try {
-    console.info('req:', req.headers);
     const auth: string = req.headers.authorization || '';
     if (auth !== process.env.GATEWAY_API_SECRET) {
       throw Error('broken key');

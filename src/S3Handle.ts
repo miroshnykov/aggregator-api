@@ -108,7 +108,7 @@ export const copyS3ToRedshift = async (destPath: string): Promise<boolean> => {
     return true;
   } catch (e) {
     influxdb(500, `copy_file_s3_to_redshift_error_${computerName}`);
-    consola.error(`copyS3ToRedshiftError for file ${destPath}:`, e);
+    consola.error(`[THIRD_STEP_COPY_TO_REDSHIFT] copyS3ToRedshiftError for file ${destPath}:`, e);
     return false;
   }
 };
@@ -163,7 +163,14 @@ export const copyGzFromS3Redshift = async (files: string[]) => {
   await Promise.all(files.map(async (file: string) => {
     const destPath = `unprocessed/${computerName}/co-offers/${file.substr(file.indexOf('unprocessed_json_gz') + 20, file.length)}`;
     filesDestPath.push(destPath!);
-    const copyS3ToRedshiftResponse: boolean = await copyS3ToRedshift(destPath);
+    let copyS3ToRedshiftResponse: boolean = false;
+    try {
+      copyS3ToRedshiftResponse = await copyS3ToRedshift(destPath);
+    } catch (e) {
+      influxdb(500, `copy_gz_file_s3_to_redshift_error_${computerName}`);
+      consola.error(`[THIRD_STEP_COPY_TO_REDSHIFT_ERROR] copyGzS3ToRedshiftError for file ${destPath}:`, e);
+    }
+
     await copyS3Files(file, copyS3ToRedshiftResponse ? IFolder.PROCESSED : IFolder.FAILED);
     await deleteS3Files(destPath);
     const endTime: bigint = process.hrtime.bigint();
