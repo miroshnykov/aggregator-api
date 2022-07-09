@@ -13,11 +13,12 @@ import { aggregateDataProcessing } from './aggregatorData';
 import {
   deleteFolder, getHumanDateFormat, getInitDateTime, setInitDateTime,
 } from './utils';
-import { IFolder, unprocessedS3Files } from './S3Handle';
+import { IFolder, reCopyS3ToRedshift } from './S3Handle';
 import { insertBonusLid, selectLid } from './redshift';
 import { IBonusLidRes } from './Interfaces/traffic';
 import { sendLidDynamoDb } from './dynamoDb';
 import { ILid } from './Interfaces/lid';
+import { IntervalTime } from './constants/intervalTime';
 
 const app: Application = express();
 const httpServer = createServer(app);
@@ -33,17 +34,19 @@ app.get('/health', (req: Request, res: Response) => {
   res.json('Ok');
 });
 
-// https://aggregator.aezai.com/reUploadToRedshift
-// https://aggregator.stage.aezai.com/reUploadToRedshift
-app.get('/reUploadToRedshift', (req: Request, res: Response) => {
+// http://localhost:9002/reCopyS3ToRedshiftUnprocessedFiles?hash=
+// https://aggregator.aezai.com/reCopyS3ToRedshiftUnprocessedFiles
+// https://aggregator.stage.aezai.com/reCopyS3ToRedshiftUnprocessedFiles
+app.post('/reCopyS3ToRedshiftUnprocessedFiles', (req: Request, res: Response) => {
   try {
-    if (!req.query.hash || req.query.hash !== process.env.GATEWAY_API_SECRET) {
+    const auth: string = req.headers.authorization || '';
+    if (auth !== process.env.GATEWAY_API_SECRET) {
       throw Error('broken key');
     }
-    setTimeout(unprocessedS3Files, 2000, IFolder.UNPROCESSED);
+    setTimeout(reCopyS3ToRedshift, 2000, IFolder.UNPROCESSED);
     res.json({
       success: true,
-      info: `added to queue  running after 2 seconds folder:{ ${IFolder.UNPROCESSED} }`,
+      // info: `added to queue  running after 2 seconds folder:{ ${IFolder.UNPROCESSED} }`,
     });
   } catch (e: any) {
     res.json({
@@ -53,16 +56,17 @@ app.get('/reUploadToRedshift', (req: Request, res: Response) => {
   }
 });
 
-// https://aggregator.aezai.com/reUploadToRedshiftFailed
-app.get('/reUploadToRedshiftFailed', (req: Request, res: Response) => {
+// https://aggregator.aezai.com/reCopyS3ToRedshiftFailedFiles
+app.post('/reCopyS3ToRedshiftFailedFiles', (req: Request, res: Response) => {
   try {
-    if (!req.query.hash || req.query.hash !== process.env.GATEWAY_API_SECRET) {
+    const auth: string = req.headers.authorization || '';
+    if (auth !== process.env.GATEWAY_API_SECRET) {
       throw Error('broken key');
     }
-    setTimeout(unprocessedS3Files, 2000, IFolder.FAILED);
+    setTimeout(reCopyS3ToRedshift, 2000, IFolder.FAILED);
     res.json({
       success: true,
-      info: `added to queue running after 2 seconds folder:{ ${IFolder.FAILED} } `,
+      // info: `added to queue running after 2 seconds folder:{ ${IFolder.FAILED} } `,
     });
   } catch (e: any) {
     res.json({
@@ -178,6 +182,26 @@ app.get('/reSendLidToDynamoDb', async (req: Request, res: Response) => {
   }
 });
 
+// http://localhost:9002/processedS3FilesCleanUp?hash=dede
+// https://aggregator.aezai.com/processedS3FilesCleanUp
+// app.get('/processedS3FilesCleanUp', (req: Request, res: Response) => {
+//   try {
+//     if (!req.query.hash || req.query.hash !== process.env.GATEWAY_API_SECRET) {
+//       throw Error('broken key');
+//     }
+//     setTimeout(processedS3FilesCleanUp, 2000, IFolder.PROCESSED);
+//     res.json({
+//       success: true,
+//       info: `added to queue processedS3FilesCleanUp running after 2 seconds folder:{ ${IFolder.PROCESSED} } `,
+//     });
+//   } catch (e: any) {
+//     res.json({
+//       success: false,
+//       info: e.toString(),
+//     });
+//   }
+// });
+
 app.use(express.json());
 
 const aggregationObject: { [index: string]: any } = {};
@@ -192,7 +216,7 @@ app.post('/offer', async (req: Request, res: Response) => {
     if (!getInitDateTime()) {
       const currentTime: number = Math.floor((new Date().getTime()) / 1000);
       const currentDateHuman = new Date(currentTime * 1000);
-      consola.info(`\nSetup setInitDateTime:${getHumanDateFormat(currentDateHuman)}, computerName:{ ${computerName} }`);
+      consola.info(`[INIT_DATA_TIME] Setup setInitDateTime:${getHumanDateFormat(currentDateHuman)}, computerName:{ ${computerName} }`);
       setInitDateTime(currentTime);
     }
 
@@ -244,15 +268,27 @@ app.post('/lidBonus', async (req: Request, res: Response) => {
   }
 });
 
-setInterval(aggregateDataProcessing, 9000, aggregationObject);
+setInterval(aggregateDataProcessing, IntervalTime.DATA_PROCESSING, aggregationObject);
 
-setInterval(deleteFolder, 36000000, localPath); // 36000000 ms -> 10h
-setInterval(deleteFolder, 36000000, `${localPath}_gz`); // 36000000 ms ->  10h
+setInterval(deleteFolder, IntervalTime.DELETE_FOLDER, localPath);
+setInterval(deleteFolder, IntervalTime.DELETE_FOLDER, `${localPath}_gz`);
 
-setInterval(unprocessedS3Files, 32400000, IFolder.FAILED); // 32400000 ms ->  9h
-setInterval(unprocessedS3Files, 28800000, IFolder.UNPROCESSED); // 28800000 ms ->  8h
+setInterval(reCopyS3ToRedshift, IntervalTime.FAILED_FILES, IFolder.FAILED);
+setInterval(reCopyS3ToRedshift, IntervalTime.UNPROCESSED_FILES, IFolder.UNPROCESSED);
+// setInterval(processedS3FilesCleanUp, IntervalTime.CLEAN_UP_PROCESSED_FILES, IFolder.PROCESSED);
 
 httpServer.listen(port, host, (): void => {
   consola.success(`Server is running on http://${host}:${port} NODE_ENV:${process.env.NODE_ENV} Using node - { ${process.version} }`);
   consola.info(`S3_BUCKET_NAME:${process.env.S3_BUCKET_NAME}, AWS_ACCESS_KEY_ID:${process.env.AWS_ACCESS_KEY_ID}`);
 });
+
+process
+  .on('unhandledRejection', (reason, p) => {
+    consola.error(reason, 'Unhandled Rejection at Promise', p);
+    influxdb(500, 'unhandledRejection');
+  })
+  .on('uncaughtException', (err: Error) => {
+    consola.error(err, 'Uncaught Exception thrown');
+    influxdb(500, 'uncaughtException');
+    process.exit(1);
+  });
